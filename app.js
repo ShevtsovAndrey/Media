@@ -141,12 +141,15 @@ img.style.cursor = 'pointer';
 
 img.onerror = () => { card.style.display = 'none'; };
 
-// ТОЛЬКО click. На iOS 16+ он работает идеально, если есть cursor:pointer
-img.addEventListener('click', (e) => {
-    e.preventDefault(); // Блокирует попытку Safari/Chrome "открыть картинку"
+// iPhone требует и touch, и click
+const openPhoto = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     openLightbox(imgUrl);
-});
+};
+
+img.addEventListener('click', openPhoto);
+img.addEventListener('touchstart', openPhoto, { passive: false });
 
     card.innerHTML = `
         ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
@@ -284,8 +287,24 @@ async function syncJSON(changes, action, retries = 2) {
 }
 // === ПОЛНОЭКРАННЫЙ ПРОСМОТР (рабочая версия для iOS + Desktop) ===
 function openLightbox(imgUrl) {
-    // Создаём оверлей СРАЗУ
-    let lb = document.createElement('div');
+    // Проверяем, есть ли уже лайтбокс
+    let lb = document.getElementById('lightbox');
+    if (lb) {
+        // Если есть — просто меняем фото
+        const img = lb.querySelector('img');
+        img.style.opacity = '0';
+        setTimeout(() => {
+            img.src = imgUrl;
+            img.onload = () => {
+                img.style.opacity = '1';
+            };
+        }, 200);
+        lb.classList.add('active');
+        return;
+    }
+    
+    // Создаём новый
+    lb = document.createElement('div');
     lb.id = 'lightbox';
     lb.className = 'lightbox';
     lb.innerHTML = '<img src="" alt="">';
@@ -300,21 +319,18 @@ function openLightbox(imgUrl) {
     lb.addEventListener('click', close);
     
     // Esc
-    const onEsc = (e) => {
-        if (e.key === 'Escape') {
+    document.addEventListener('keydown', function onEsc(e) {
+        if (e.key === 'Escape' && document.getElementById('lightbox')) {
             close();
             document.removeEventListener('keydown', onEsc);
         }
-    };
-    document.addEventListener('keydown', onEsc);
+    });
     
-    // Показываем картинку
+    // Показ
     const img = lb.querySelector('img');
-    img.style.opacity = '0';
-    img.style.transition = 'opacity 0.15s ease';
     img.src = imgUrl;
     
-    // Форсируем reflow чтобы transition сработал
+    // Форсируем reflow
     requestAnimationFrame(() => {
         if (img.complete) {
             img.style.opacity = '1';
@@ -323,10 +339,6 @@ function openLightbox(imgUrl) {
             img.onload = () => {
                 img.style.opacity = '1';
                 lb.classList.add('active');
-            };
-            img.onerror = () => {
-                console.error('Ошибка загрузки:', imgUrl);
-                close();
             };
         }
     });
