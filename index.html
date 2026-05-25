@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shevtsov Media</title>
+    <title>Галерея</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <main id="gallery" class="gallery"></main>
     
-    <!-- Кнопка "+" (скрыта для гостей) -->
     <button id="addBtn" class="add-btn" style="display: none;">+</button>
     <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
 
-    <!-- AWS SDK для работы с Яндекс S3 -->
-    <script src="https://cdn.jsdelivr.net/npm/@aws-sdk/client-s3@3.500.0/dist/umd/index.js"></script>
+    <!-- Исправленная загрузка AWS SDK -->
+    <script src="https://unpkg.com/@aws-sdk/client-s3@3.500.0/dist/umd/index.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
