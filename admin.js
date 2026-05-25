@@ -27,8 +27,24 @@ document.getElementById('systemFileInput').addEventListener('change', (e) => {
 // 4. Процесс загрузки
 async function startUpload() {
     const token = localStorage.getItem('github_token');
-    const title = document.getElementById('photoTitle').value.trim() || pendingFile.name;
+    
+    // 1. Берем то, что ввел пользователь (может быть на русском)
+    const inputTitle = document.getElementById('photoTitle').value.trim();
     const location = document.getElementById('photoLocation').value.trim() || 'Без локации';
+    
+    // 2. Делаем безопасное имя файла (только латиница и цифры)
+    // normalize убирает диакритику, replace меняет кириллицу и пробелы на подчеркивания
+    const safeName = pendingFile.name
+        .normalize('NFD')
+        .replace(/[\u0030-\u0039\u0041-\u005a\u0061-\u007a._-]/g, '') 
+        .replace(/[^a-zA-Z0-9._-]/g, '_'); 
+        
+    // Итоговое имя: 1234567890_safe_name.jpg
+    const fileName = `assets/img/${Date.now()}_${safeName}`;
+
+    // 3. Заголовок для сайта (оставляем русским, если пользователь ввел, иначе берем имя файла)
+    const photoTitle = inputTitle || pendingFile.name;
+
     const status = document.getElementById('uploadStatus');
     const btn = document.querySelector('#infoModal button');
 
@@ -38,16 +54,15 @@ async function startUpload() {
     try {
         // Конвертация в Base64
         const base64 = await fileToBase64(pendingFile);
-        const fileName = `assets/img/${Date.now()}_${pendingFile.name.replace(/\s/g, '_')}`;
 
-        // 1. Загружаем картинку в GitHub
-        await githubAPI(token, fileName, base64, `Add photo: ${title}`);
+        // 1. Загружаем картинку в GitHub (используем safeFileName - английский)
+        await githubAPI(token, fileName, base64, `Add photo: ${photoTitle}`);
 
-        // 2. Обновляем JSON с данными
-        await updateGalleryJSON(token, fileName, title, location);
+        // 2. Обновляем JSON (используем photoTitle - русский)
+        await updateGalleryJSON(token, fileName, photoTitle, location);
 
         status.textContent = '✅ Готово!';
-        setTimeout(() => location.reload(), 800); // Перезагрузка для отображения нового фото
+        setTimeout(() => location.reload(), 800); 
 
     } catch (err) {
         status.textContent = '❌ ' + err.message;
