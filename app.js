@@ -1,43 +1,20 @@
-// === ОТЛАДКА: смотрим что загрузилось ===
-console.log('=== AWS SDK DEBUG ===');
-console.log('window.AWS:', window.AWS);
-console.log('window.S3Client:', window.S3Client);
-if (window.AWS) {
-    console.log('Keys in window.AWS:', Object.keys(window.AWS));
-}
-console.log('=== END DEBUG ===');
+// === БЕЗОПАСНОЕ ПОЛУЧЕНИЕ AWS SDK ===
+// UMD-сборка может положить классы в window или window.AWS
+const sdk = window.AWS || window["@aws-sdk/client-s3"] || {};
+const S3Client = sdk.S3Client || (typeof window.S3Client !== 'undefined' ? window.S3Client : null);
+const PutObjectCommand = sdk.PutObjectCommand || (typeof window.PutObjectCommand !== 'undefined' ? window.PutObjectCommand : null);
+const DeleteObjectCommand = sdk.DeleteObjectCommand || (typeof window.DeleteObjectCommand !== 'undefined' ? window.DeleteObjectCommand : null);
 
-// === ПОПЫТКА ПОЛУЧИТЬ КЛАССЫ (несколько вариантов) ===
-let S3Client, PutObjectCommand, DeleteObjectCommand;
-
-// Вариант 1: напрямую в window
-if (window.S3Client) {
-    S3Client = window.S3Client;
-    PutObjectCommand = window.PutObjectCommand;
-    DeleteObjectCommand = window.DeleteObjectCommand;
-}
-// Вариант 2: в window.AWS
-else if (window.AWS?.S3Client) {
-    S3Client = window.AWS.S3Client;
-    PutObjectCommand = window.AWS.PutObjectCommand;
-    DeleteObjectCommand = window.AWS.DeleteObjectCommand;
-}
-// Вариант 3: вложенная структура
-else if (window.AWS?.Client?.S3Client) {
-    S3Client = window.AWS.Client.S3Client;
-    PutObjectCommand = window.AWS.Client.PutObjectCommand;
-    DeleteObjectCommand = window.AWS.Client.DeleteObjectCommand;
-}
-else {
-    console.error('❌ Не удалось найти AWS SDK классы!');
-    alert('Ошибка загрузки AWS SDK. Проверь консоль (F12).');
+if (!S3Client) {
+    console.error('AWS SDK не загружен. Проверь консоль и интернет.');
+    alert('Ошибка инициализации SDK. Проверь F12 → Console.');
 }
 
-
+// === НАСТРОЙКИ (вставь свои данные) ===
 const YANDEX_CONFIG = {
     region: 'ru-central1',
     endpoint: 'https://storage.yandexcloud.net',
-    bucket: 'my-gallery-photos-777',      // ← ТВОЁ ИМЯ БАКЕТА
+    bucket: 'my-gallery-photos-777',      // ← ТВОЙ БАКЕТ
     accessKeyId: 'YCAJEdsduslR2tqI4X7bloeTg',    // ← ТВОЙ ACCESS KEY
     secretAccessKey: 'YCNSa7x9zzWqAGzAI8Iyvv6j3475TIpIy7PGqEs5' // ← ТВОЙ SECRET KEY
 };
@@ -47,11 +24,8 @@ const GITHUB_CONFIG = {
     branch: 'main',
     jsonPath: 'data/gallery.json'
 };
-// ⬆️⬆️⬆️ КОНЕЦ НАСТРОЕК ⬆️⬆️⬆️
 
-// Получаем AWS SDK из глобальной области (UMD сборка)
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = window;
-
+// Инициализация клиента
 const s3 = new S3Client({
     region: YANDEX_CONFIG.region,
     endpoint: YANDEX_CONFIG.endpoint,
@@ -59,7 +33,7 @@ const s3 = new S3Client({
         accessKeyId: YANDEX_CONFIG.accessKeyId,
         secretAccessKey: YANDEX_CONFIG.secretAccessKey
     },
-    forcePathStyle: true // Обязательно для Яндекс
+    forcePathStyle: true // Обязательно для Яндекса
 });
 
 // Проверка админа
@@ -126,7 +100,6 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
         try {
             const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
             
-            // Загрузка в Яндекс
             await s3.send(new PutObjectCommand({
                 Bucket: YANDEX_CONFIG.bucket,
                 Key: key,
@@ -134,10 +107,7 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
                 ContentType: file.type
             }));
 
-            // Обновление JSON
             await syncJSON([{ title: file.name.split('.')[0], key }], 'add');
-            
-            // Добавление на страницу
             renderCard({ title: file.name.split('.')[0], key }, -1);
         } catch (err) {
             console.error(err);
