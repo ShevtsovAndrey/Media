@@ -1,0 +1,11 @@
+.main {
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  border: none;
+  font: normal 16px/1 Arial, Helvetica, sans-serif;
+  color: black;
+  -o-text-overflow: ellipsis;
+  text-overflow: ellipsis;
+  background: rgba(255,255,255,1);
+}
