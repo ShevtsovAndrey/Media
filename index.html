@@ -8,6 +8,25 @@
 </head>
 <body>
     <main id="gallery" class="gallery"></main>
+
+    <!-- Скрытый системный инпут для файлов -->
+    <input type="file" id="systemFileInput" accept="image/*" style="display: none;">
+
+    <!-- Кнопка "+" (скрыта, пока нет токена) -->
+    <button id="addBtn" class="add-btn" style="display: none;">+</button>
+
+    <!-- Мини-модалка для названия и локации -->
+    <div id="infoModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>📸 New</h3>
+            <input type="text" id="photoTitle" placeholder="Название (необязательно)">
+            <input type="text" id="photoLocation" placeholder="Локация (необязательно)">
+            <button onclick="startUpload()">Загрузить</button>
+            <span id="uploadStatus"></span>
+        </div>
+    </div>
+
     <script src="gallery.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>
