@@ -12,13 +12,6 @@
     <button id="addBtn" class="add-btn" style="display: none;">+</button>
     <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
 
-    <script type="module">
-        import { S3Client, PutObjectCommand, DeleteObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.500.0';
-        window.AWS = { S3Client, PutObjectCommand, DeleteObjectCommand };
-        
-        const script = document.createElement('script');
-        script.src = 'app.js';
-        document.body.appendChild(script);
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>

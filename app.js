@@ -6,30 +6,34 @@ const YANDEX_CONFIG = {
     accessKeyId: 'YCAJEdsduslR2tqI4X7bloeTg', // ТВОЙ ACCESS KEY ID
     secretAccessKey: 'YCNSa7x9zzWqAGzAI8Iyvv6j3475TIpIy7PGqEs5' // ТВОЙ SECRET KEY
 };
-
 const GITHUB_CONFIG = {
     repo: 'ShevtsovAndrey/Media',
     branch: 'main',
     jsonPath: 'data/gallery.json'
 };
 
-// Инициализация S3 клиента
-// AWS SDK v3 - классы доступны напрямую в window
-const S3Client = window.AWS.S3Client;
-const PutObjectCommand = window.AWS.PutObjectCommand;
-const DeleteObjectCommand = window.AWS.DeleteObjectCommand;
-const s3 = new S3Client({
-    region: YANDEX_CONFIG.region,
-    endpoint: YANDEX_CONFIG.endpoint,
-    credentials: { accessKeyId: YANDEX_CONFIG.accessKeyId, secretAccessKey: YANDEX_CONFIG.secretAccessKey },
-    forcePathStyle: true // Обязательно для Яндекса
-});
-
-// Проверка админа
 const isAdmin = !!localStorage.getItem('github_token');
 if (isAdmin) document.getElementById('addBtn').style.display = 'flex';
 
-// Загрузка галереи
+// Простая функция загрузки через fetch (без AWS SDK)
+async function uploadToYandex(file, key) {
+    const url = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${key}`;
+    
+    // Создаём подпись для PUT запроса (упрощённая)
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `AWS ${YANDEX_CONFIG.accessKeyId}:${btoa(YANDEX_CONFIG.secretAccessKey)}`,
+            'Content-Type': file.type,
+            'x-amz-date': new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+        },
+        body: file
+    });
+    
+    if (!response.ok) throw new Error('Ошибка загрузки');
+    return url;
+}
+
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Загрузка...</div>';
@@ -44,12 +48,10 @@ async function loadGallery() {
         gallery.innerHTML = '';
         photos.forEach((photo, i) => renderCard(photo, i));
     } catch (err) {
-        gallery.innerHTML = '<div class="loading">Ошибка загрузки JSON</div>';
-        console.error(err);
+        gallery.innerHTML = '<div class="loading">Ошибка</div>';
     }
 }
 
-// Рендер карточки
 function renderCard(photo, index) {
     const card = document.createElement('div');
     card.className = 'photo-card';
@@ -59,7 +61,7 @@ function renderCard(photo, index) {
 
     card.innerHTML = `
         <img src="${imgUrl}" alt="${photo.title}" loading="lazy">
-        ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
+        ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn">&minus;</button></div>` : ''}
     `;
 
     if (isAdmin) {
@@ -71,12 +73,10 @@ function renderCard(photo, index) {
     document.getElementById('gallery').appendChild(card);
 }
 
-// Кнопка "+"
 document.getElementById('addBtn').addEventListener('click', () => {
     document.getElementById('fileInput').click();
 });
 
-// Выбор и загрузка файлов
 document.getElementById('fileInput').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -89,15 +89,8 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
         try {
             const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
             
-            // 1. Загрузка в Яндекс (бинарно, быстро)
-            await s3.send(new PutObjectCommand({
-                Bucket: YANDEX_CONFIG.bucket, Key: key, Body: file, ContentType: file.type
-            }));
-
-            // 2. Обновление JSON на GitHub
+            await uploadToYandex(file, key);
             await syncJSON([{ title: file.name.split('.')[0], key }], 'add');
-
-            // 3. Мгновенное добавление на страницу
             renderCard({ title: file.name.split('.')[0], key }, -1);
         } catch (err) {
             alert(`Ошибка ${file.name}: ${err.message}`);
@@ -109,26 +102,30 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
     e.target.value = '';
 });
 
-// Удаление фото
 async function deletePhoto(key, title, index) {
-    if (!confirm(`Удалить "${title}"? Файл сотрётся из облака и с сайта.`)) return;
-
+    if (!confirm(`Удалить "${title}"?`)) return;
+    
     const cards = document.querySelectorAll('.photo-card');
     cards[index].style.opacity = '0.3';
-    cards[index].style.pointerEvents = 'none';
-
+    
     try {
-        await s3.send(new DeleteObjectCommand({ Bucket: YANDEX_CONFIG.bucket, Key: key }));
+        // Удаление через fetch (аналогично загрузке)
+        const url = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${key}`;
+        await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `AWS ${YANDEX_CONFIG.accessKeyId}:${btoa(YANDEX_CONFIG.secretAccessKey)}`
+            }
+        });
+        
         await syncJSON([{ key }], 'delete');
         cards[index].remove();
     } catch (err) {
-        alert('Ошибка удаления: ' + err.message);
+        alert('Ошибка удаления');
         cards[index].style.opacity = '1';
-        cards[index].style.pointerEvents = 'auto';
     }
 }
 
-// Синхронизация с GitHub JSON
 async function syncJSON(changes, action) {
     const token = localStorage.getItem('github_token');
     const url = `https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}`;
@@ -157,5 +154,4 @@ async function syncJSON(changes, action) {
     });
 }
 
-// Старт
 loadGallery();
