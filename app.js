@@ -132,13 +132,27 @@ function renderCard(photo, index) {
 
     const imgUrl = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${photo.key}`;
 
+    // Создаём img элемент программно — так безопаснее
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.alt = photo.title;
+    img.loading = 'lazy';
+    img.style.cursor = 'zoom-in';
+    
+    // Обработчик ошибки загрузки
+    img.onerror = () => { card.style.display = 'none'; };
+    
+    // Обработчик клика — открываем лайтбокс
+    img.onclick = (e) => {
+        e.stopPropagation(); // Чтобы не сработал клик по карточке/удалению
+        openLightbox(imgUrl);
+    };
+
     card.innerHTML = `
-        <img src="${imgUrl}" alt="${photo.title}" loading="lazy" 
-             onerror="this.parentElement.style.display='none'"
-             style="cursor: zoom-in"
-             onclick="event.stopPropagation(); openLightbox('${imgUrl}')">
         ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
     `;
+    
+    card.appendChild(img); // Вставляем картинку в карточку
 
     if (isAdmin) {
         card.querySelector('.delete-btn').addEventListener('click', (e) => {
@@ -269,7 +283,6 @@ async function syncJSON(changes, action, retries = 2) {
     }
 }
 function openLightbox(imgUrl) {
-    // Создаём оверлей, если его нет
     let lb = document.getElementById('lightbox');
     if (!lb) {
         lb = document.createElement('div');
@@ -278,7 +291,6 @@ function openLightbox(imgUrl) {
         lb.innerHTML = '<img src="" alt="">';
         document.body.appendChild(lb);
         
-        // Закрытие по клику в любую часть оверлея
         lb.addEventListener('click', () => {
             lb.classList.remove('active');
             setTimeout(() => lb.remove(), 200);
@@ -287,10 +299,16 @@ function openLightbox(imgUrl) {
     
     const img = lb.querySelector('img');
     img.src = imgUrl;
-    img.onload = () => lb.classList.add('active');
     
-    // Если картинка уже в кэше — показываем сразу
-    if (img.complete) lb.classList.add('active');
+    // Показываем либо сразу (если в кэше), либо после загрузки
+    if (img.complete) {
+        lb.classList.add('active');
+    } else {
+        img.onload = () => lb.classList.add('active');
+    }
 }
+
+// Делаем функцию глобальной (на всякий случай)
+window.openLightbox = openLightbox;
 // Старт
 loadGallery();
