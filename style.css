@@ -54,3 +54,22 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
     .photo-card { max-width: 100%; }
     .photo-card img { max-height: 50vh; }
 }
+
+.lightbox {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.95);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    cursor: zoom-out;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+.lightbox.active {
+    opacity: 1; pointer-events: auto;
+}
+.lightbox img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    box-shadow: none; border: none; outline: none;
+}

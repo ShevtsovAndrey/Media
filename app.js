@@ -133,7 +133,10 @@ function renderCard(photo, index) {
     const imgUrl = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${photo.key}`;
 
     card.innerHTML = `
-        <img src="${imgUrl}" alt="${photo.title}" loading="lazy" onerror="this.parentElement.style.display='none'">
+        <img src="${imgUrl}" alt="${photo.title}" loading="lazy" 
+             onerror="this.parentElement.style.display='none'"
+             style="cursor: zoom-in"
+             onclick="event.stopPropagation(); openLightbox('${imgUrl}')">
         ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
     `;
 
@@ -265,6 +268,29 @@ async function syncJSON(changes, action, retries = 2) {
         throw new Error(errData.message || `GitHub API error ${putRes.status}`);
     }
 }
-
+function openLightbox(imgUrl) {
+    // Создаём оверлей, если его нет
+    let lb = document.getElementById('lightbox');
+    if (!lb) {
+        lb = document.createElement('div');
+        lb.id = 'lightbox';
+        lb.className = 'lightbox';
+        lb.innerHTML = '<img src="" alt="">';
+        document.body.appendChild(lb);
+        
+        // Закрытие по клику в любую часть оверлея
+        lb.addEventListener('click', () => {
+            lb.classList.remove('active');
+            setTimeout(() => lb.remove(), 200);
+        });
+    }
+    
+    const img = lb.querySelector('img');
+    img.src = imgUrl;
+    img.onload = () => lb.classList.add('active');
+    
+    // Если картинка уже в кэше — показываем сразу
+    if (img.complete) lb.classList.add('active');
+}
 // Старт
 loadGallery();
