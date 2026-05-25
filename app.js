@@ -132,30 +132,51 @@ function renderCard(photo, index) {
 
     const imgUrl = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${photo.key}`;
 
-    // Создаём img элемент программно — так безопаснее
-const img = document.createElement('img');
-img.src = imgUrl;
-img.alt = photo.title;
-img.loading = 'lazy';
-img.style.cursor = 'pointer';
+    // Создаём img элемент
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.alt = photo.title;
+    img.loading = 'lazy';
+    img.style.cursor = 'pointer';
 
-img.onerror = () => { card.style.display = 'none'; };
+    img.onerror = () => { card.style.display = 'none'; };
 
-// iPhone требует и touch, и click
-const openPhoto = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    openLightbox(imgUrl);
-};
+    // Переменные для отслеживания касания
+    let touchStartX = 0;
+    let touchStartY = 0;
 
-img.addEventListener('click', openPhoto);
-img.addEventListener('touchstart', openPhoto, { passive: false });
+    // 1. Запоминаем где коснулись (НЕ открываем лайтбокс сразу!)
+    img.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    // 2. При отпускании проверяем: если сдвиг < 15px — это тап
+    img.addEventListener('touchend', (e) => {
+        const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
+        const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+
+        // Если палец почти не двигался — открываем лайтбокс
+        if (deltaX < 15 && deltaY < 15) {
+            e.preventDefault();
+            e.stopPropagation();
+            openLightbox(imgUrl);
+        }
+        // Если двигался — это скролл, ничего не делаем
+    }, { passive: false });
+
+    // 3. Для компьютера — обычный клик
+    img.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openLightbox(imgUrl);
+    });
 
     card.innerHTML = `
         ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
     `;
     
-    card.appendChild(img); // Вставляем картинку в карточку
+    card.appendChild(img);
 
     if (isAdmin) {
         card.querySelector('.delete-btn').addEventListener('click', (e) => {
