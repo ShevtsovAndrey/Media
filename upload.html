@@ -3,23 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Настройка доступа</title>
+    <title>Ключ для публикаций</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #111; color: #fff; }
-        .box { background: #222; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; }
-        input { width: 100%; padding: 12px; margin: 15px 0; background: #333; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #45a049; }
-        .status { margin-top: 15px; font-size: 14px; color: #aaa; }
-        .success { color: #4CAF50; font-weight: bold; }
+        body { 
+            font-family: sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            background: #ffffff; 
+            color: #000000; 
+        }
+
+        .box { 
+            background: #ffffff; 
+            padding: 24px; 
+            border-radius: 12px; 
+            text-align: center; 
+            max-width: 400px; 
+            width: 90%; 
+        }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 15px 0; 
+            background: #ffffff; 
+            border: 1px solid #000000; 
+            color: rgb(0, 0, 0); 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #e0e0e0; 
+            color: rgb(0, 0, 0); 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px; 
+        }
+        button:hover { 
+            background: #cccccc; 
+        }
+        .status { 
+            margin-top: 15px; 
+            font-size: 14px; 
+            color: #000000; 
+        }
+        .success { 
+            color: #000000; 
+            font-weight: bold; 
+        }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>🔑 Ключ доступа</h2>
-        <p>Введи GitHub Token один раз. Он сохранится в браузере.</p>
+        <h2>Ключ доступа 🔑</h2>
+        <p>Введи ключ доступа к публикациям и нажми "Сохранить". Ключ будет привязан к одному устройству.</p>
         <input type="text" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxx">
-        <button onclick="saveToken()">Сохранить токен</button>
+        <button onclick="saveToken()">Сохранить</button>
         <p class="status" id="status"></p>
     </div>
 
@@ -30,12 +74,13 @@
         function saveToken() {
             const token = document.getElementById('tokenInput').value.trim();
             if (!token) {
-                document.getElementById('status').textContent = '❌ Введи токен';
+                document.getElementById('status').textContent = ' Нужен токен ❌';
                 return;
             }
             localStorage.setItem('github_token', token);
             document.getElementById('status').className = 'status success';
-            document.getElementById('status').textContent = '✅ Сохранено! Теперь на главной появится плюсик.';
+            document.getElementById('status').textContent = 'Сохранено ✅';
+            
         }
     </script>
 </body>
