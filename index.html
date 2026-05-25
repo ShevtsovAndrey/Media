@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Галерея</title>
+    <title>Shevtsov Media</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,6 +12,18 @@
     <button id="addBtn" class="add-btn" style="display: none;">+</button>
     <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
 
-    <script src="app.js"></script>
+    <script type="module">
+        import { 
+            S3Client, 
+            PutObjectCommand, 
+            DeleteObjectCommand 
+        } from 'https://unpkg.com/@aws-sdk/client-s3@3.500.0/dist/es/index.js';
+        
+        window.AWS = { S3Client, PutObjectCommand, DeleteObjectCommand };
+        
+        const script = document.createElement('script');
+        script.src = 'app.js';
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>
