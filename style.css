@@ -1,11 +1,13 @@
-.main {
-  -webkit-box-sizing: content-box;
-  -moz-box-sizing: content-box;
-  box-sizing: content-box;
-  border: none;
-  font: normal 16px/1 Arial, Helvetica, sans-serif;
-  color: black;
-  -o-text-overflow: ellipsis;
-  text-overflow: ellipsis;
-  background: rgba(255,255,255,1);
+body{
+  background-color: whitesmoke;
+}
+
+.placeholdertext {
+display: flex; /* Делаем блок flex-контейнером */
+  justify-content: center; /* Выравнивание по горизонтали */
+  align-items: center; /* Выравнивание по вертикали */
+  height: 100vh; /* Задаем высоту на весь экран */
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(2rem, 4vw, 6rem);
+  white-space: nowrap;
 }
