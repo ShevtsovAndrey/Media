@@ -1,0 +1,21 @@
+backend:
+name: github
+repo: ShevtsovAndrey/Media
+branch: main
+publish_mode: editorial_workflow
+
+media_folder: "images"
+public_folder: "/images"
+
+collections:
+- name "photos"
+label: "Фотографии"
+folder: "photos"
+create: true
+fields:
+- {name: "title", label: "Название", widget: "string"
+}
+- {name: "image", label: "Изображение", widget: "image"
+}
+- {name: "tags", label: "Название", widget: "list"
+}
