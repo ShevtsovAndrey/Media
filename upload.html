@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка фото</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { margin-top: 0; color: #333; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .dropzone {
+            border: 3px dashed #4CAF50;
+            border-radius: 10px;
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+        .dropzone:hover, .dropzone.dragover {
+            background: #e8f5e9;
+            border-color: #45a049;
+        }
+        .dropzone input { display: none; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .status { 
+            margin-top: 20px; 
+            padding: 15px; 
+            border-radius: 6px;
+            display: none;
+        }
+        .success { 
+            background: #d4edda; 
+            color: #155724;
+            display: block;
+        }
+        .error { 
+            background: #f8d7da; 
+            color: #721c24;
+            display: block;
+        }
+        .token-box {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            border-left: 4px solid #ffc107;
+        }
+        .token-box a { color: #0056b3; font-weight: 600; }
+        #fileName { 
+            color: #4CAF50; 
+            margin-top: 15px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Загрузка фото в галерею</h1>
+        
+        <div class="token-box">
+            <strong>🔑 Нужен токен GitHub (один раз):</strong><br><br>
+            1. <a href="https://github.com/settings/tokens" target="_blank">Создай токен</a><br>
+            2. Выбери scope: <strong>repo</strong> (полный доступ к репозиторию)<br>
+            3. Скопируй токен и вставь ниже<br>
+            <small>Токен сохранится только в твоём браузере</small>
+        </div>
+
+        <div class="form-group">
+            <label for="token">🔐 GitHub Token:</label>
+            <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+        </div>
+
+        <div class="form-group">
+            <label for="title">📝 Название фото:</label>
+            <input type="text" id="title" placeholder="Например: Закат на крыше">
+        </div>
+
+        <div class="form-group">
+            <label for="location">📍 Локация:</label>
+            <input type="text" id="location" placeholder="Например: Москва, Россия">
+        </div>
+
+        <div class="form-group">
+            <label>📷 Фото:</label>
+            <div class="dropzone" id="dropzone">
+                <input type="file" id="fileInput" accept="image/*">
+                <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                <p style="margin: 0; color: #666;">Перетащи фото сюда</p>
+                <p style="margin: 5px 0 0 0; color: #999; font-size: 14px;">или кликни для выбора</p>
+                <p id="fileName"></p>
+            </div>
+        </div>
+
+        <button id="uploadBtn" onclick="uploadPhoto()"> Загрузить на сайт</button>
+        
+        <div id="status"></div>
+        
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="/" style="color: #4CAF50; text-decoration: none;">← На главную</a>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        const REPO = 'ShevtsovAndrey/Media';
+        const BRANCH = 'main';
+
+        // Загружаем сохранённый токен
+        const savedToken = localStorage.getItem('github_token');
+        if (savedToken) {
+            document.getElementById('token').value = savedToken;
+        }
+
+        // Drag & Drop
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                selectedFile = e.dataTransfer.files[0];
+                showFileName();
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                selectedFile = fileInput.files[0];
+                showFileName();
+            }
+        });
+
+        function showFileName() {
+            const name = selectedFile ? selectedFile.name : '';
+            document.getElementById('fileName').textContent = name ? `✅ Выбрано: ${name}` : '';
+        }
+
+        async function uploadPhoto() {
+            const token = document.getElementById('token').value.trim();
+            const title = document.getElementById('title').value.trim();
+            const location = document.getElementById('location').value.trim();
+            const statusDiv = document.getElementById('status');
+
+            // Валидация
+            if (!token) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Введи GitHub токен';
+                return;
+            }
+            if (!selectedFile) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Выбери фото (перетащи или кликни)';
+                return;
+            }
+            if (!title) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Введи название фото';
+                return;
+            }
+            if (!location) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Введи локацию';
+                return;
+            }
+
+            // Сохраняем токен
+            localStorage.setItem('github_token', token);
+
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Загрузка...';
+            statusDiv.className = 'status';
+            statusDiv.textContent = '';
+
+            try {
+                // 1. Конвертируем фото в Base64
+                const base64 = await fileToBase64(selectedFile);
+                const timestamp = Date.now();
+                const fileName = `assets/img/${timestamp}_${selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+
+                statusDiv.className = 'status';
+                statusDiv.textContent = '📤 Загружаю фото на GitHub...';
+
+                // 2. Загружаем фото в GitHub
+                await uploadToGitHub(token, fileName, base64, `Add photo: ${title}`);
+
+                statusDiv.className = 'status';
+                statusDiv.textContent = '📝 Обновляю галерею...';
+
+                // 3. Обновляем gallery.json
+                await updateGalleryJSON(token, fileName, title, location);
+
+                // Успех
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `
+                    ✅ <strong>Фото успешно загружено!</strong><br><br>
+                    Оно появится на сайте через 1-2 минуты (пока GitHub Pages пересоберёт сайт).<br><br>
+                    <a href="/" style="color: #155724; font-weight: 600;">→ Перейти на главную</a>
+                `;
+
+                // Очистка формы
+                document.getElementById('title').value = '';
+                document.getElementById('location').value = '';
+                fileInput.value = '';
+                selectedFile = null;
+                document.getElementById('fileName').textContent = '';
+
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ Ошибка: ${error.message}`;
+                console.error(error);
+            }
+
+            btn.disabled = false;
+            btn.textContent = '📤 Загрузить на сайт';
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // Убираем data:image/jpeg;base64, оставляем только base64
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function uploadToGitHub(token, path, content, message) {
+            const url = `https://api.github.com/repos/${REPO}/contents/${path}`;
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    content: content,
+                    branch: BRANCH
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || `HTTP ${response.status}`);
+            }
+            
+            return response.json();
+        }
+
+        async function updateGalleryJSON(token, imagePath, title, location) {
+            const jsonPath = 'data/gallery.json';
+            const url = `https://api.github.com/repos/${REPO}/contents/${jsonPath}`;
+
+            // Пробуем получить текущий файл
+            let currentContent = [];
+            let sha = null;
+
+            const getResponse = await fetch(url, {
+                headers: { 
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (getResponse.ok) {
+                const data = await getResponse.json();
+                try {
+                    const decoded = atob(data.content);
+                    currentContent = JSON.parse(decoded);
+                } catch (e) {
+                    currentContent = [];
+                }
+                sha = data.sha;
+            }
+
+            // Добавляем новое фото
+            currentContent.push({
+                title: title,
+                location: location,
+                image: imagePath,
+                description: ''
+            });
+
+            // Обновляем файл
+            const updateResponse = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: `Add photo: ${title}`,
+                    content: btoa(JSON.stringify(currentContent, null, 2)),
+                    branch: BRANCH,
+                    sha: sha
+                })
+            });
+
+            if (!updateResponse.ok) {
+                const error = await updateResponse.json();
+                throw new Error(error.message || 'Не удалось обновить gallery.json');
+            }
+        }
+    </script>
+</body>
+</html>
