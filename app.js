@@ -1,4 +1,39 @@
-// ⬇️⬇️⬇️ ВСТАВЬ СЮДА СВОИ ДАННЫЕ ⬇️⬇️⬇️
+// === ОТЛАДКА: смотрим что загрузилось ===
+console.log('=== AWS SDK DEBUG ===');
+console.log('window.AWS:', window.AWS);
+console.log('window.S3Client:', window.S3Client);
+if (window.AWS) {
+    console.log('Keys in window.AWS:', Object.keys(window.AWS));
+}
+console.log('=== END DEBUG ===');
+
+// === ПОПЫТКА ПОЛУЧИТЬ КЛАССЫ (несколько вариантов) ===
+let S3Client, PutObjectCommand, DeleteObjectCommand;
+
+// Вариант 1: напрямую в window
+if (window.S3Client) {
+    S3Client = window.S3Client;
+    PutObjectCommand = window.PutObjectCommand;
+    DeleteObjectCommand = window.DeleteObjectCommand;
+}
+// Вариант 2: в window.AWS
+else if (window.AWS?.S3Client) {
+    S3Client = window.AWS.S3Client;
+    PutObjectCommand = window.AWS.PutObjectCommand;
+    DeleteObjectCommand = window.AWS.DeleteObjectCommand;
+}
+// Вариант 3: вложенная структура
+else if (window.AWS?.Client?.S3Client) {
+    S3Client = window.AWS.Client.S3Client;
+    PutObjectCommand = window.AWS.Client.PutObjectCommand;
+    DeleteObjectCommand = window.AWS.Client.DeleteObjectCommand;
+}
+else {
+    console.error('❌ Не удалось найти AWS SDK классы!');
+    alert('Ошибка загрузки AWS SDK. Проверь консоль (F12).');
+}
+
+
 const YANDEX_CONFIG = {
     region: 'ru-central1',
     endpoint: 'https://storage.yandexcloud.net',
