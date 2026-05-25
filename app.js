@@ -284,63 +284,54 @@ async function syncJSON(changes, action, retries = 2) {
 }
 // === ПОЛНОЭКРАННЫЙ ПРОСМОТР (рабочая версия для iOS + Desktop) ===
 function openLightbox(imgUrl) {
-    // Создаём оверлей, если его нет
-    let lb = document.getElementById('lightbox');
-    if (!lb) {
-        lb = document.createElement('div');
-        lb.id = 'lightbox';
-        lb.className = 'lightbox';
-        lb.innerHTML = '<img src="" alt="">';
-        document.body.appendChild(lb);
-        
-        // Закрытие по клику в любое место оверлея
-        lb.addEventListener('click', () => {
-            lb.classList.remove('active');
-            setTimeout(() => {
-                lb.remove();
-            }, 200);
-        });
-        
-        // Закрытие по клавише Esc
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.getElementById('lightbox')) {
-                const box = document.getElementById('lightbox');
-                box.classList.remove('active');
-                setTimeout(() => box.remove(), 200);
-            }
-        });
-    }
+    // Создаём оверлей СРАЗУ
+    let lb = document.createElement('div');
+    lb.id = 'lightbox';
+    lb.className = 'lightbox';
+    lb.innerHTML = '<img src="" alt="">';
+    document.body.appendChild(lb);
     
-    // Находим картинку внутри оверлея
-    const img = lb.querySelector('img');
-    
-    // Скрываем пока грузится
-    img.style.opacity = '0';
-    img.style.transition = 'opacity 0.15s ease';
-    
-    // Задаём источник
-    img.src = imgUrl;
-    
-    // Функция показа
-    const show = () => {
-        img.style.opacity = '1';
-        lb.classList.add('active');
+    // Закрытие
+    const close = () => {
+        lb.classList.remove('active');
+        setTimeout(() => lb.remove(), 200);
     };
     
-    // Если картинка уже в кэше — показываем сразу
-    if (img.complete && img.naturalWidth !== 0) {
-        show();
-    } else {
-        // Иначе ждём загрузки
-        img.onload = show;
-        img.onerror = () => {
-            console.error('Не удалось загрузить изображение:', imgUrl);
-            lb.remove();
-        };
-    }
+    lb.addEventListener('click', close);
+    
+    // Esc
+    const onEsc = (e) => {
+        if (e.key === 'Escape') {
+            close();
+            document.removeEventListener('keydown', onEsc);
+        }
+    };
+    document.addEventListener('keydown', onEsc);
+    
+    // Показываем картинку
+    const img = lb.querySelector('img');
+    img.style.opacity = '0';
+    img.style.transition = 'opacity 0.15s ease';
+    img.src = imgUrl;
+    
+    // Форсируем reflow чтобы transition сработал
+    requestAnimationFrame(() => {
+        if (img.complete) {
+            img.style.opacity = '1';
+            lb.classList.add('active');
+        } else {
+            img.onload = () => {
+                img.style.opacity = '1';
+                lb.classList.add('active');
+            };
+            img.onerror = () => {
+                console.error('Ошибка загрузки:', imgUrl);
+                close();
+            };
+        }
+    });
 }
 
-// Делаем функцию доступной глобально (для отладки и совместимости)
 window.openLightbox = openLightbox;
 // Старт
 loadGallery();
