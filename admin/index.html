@@ -3,11 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin</title>
+  <!-- Жёсткий запрет кэширования -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Admin Panel</title>
 </head>
 <body>
   <div id="nc-root"></div>
-  <!-- Стабильная версия 3.0.12, где implicit auth для GitHub работает без сбоев -->
-  <script src="https://cdn.jsdelivr.net/npm/decap-cms@3.0.12/dist/decap-cms.js"></script>
+  <!-- Стабильная версия, где GitHub OAuth работает без прокси -->
+  <script src="https://cdn.jsdelivr.net/npm/decap-cms@3.1.11/dist/decap-cms.js"></script>
 </body>
 </html>
