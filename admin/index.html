@@ -7,32 +7,7 @@
 </head>
 <body>
   <div id="nc-root"></div>
-  <script>
-    window.CMS_CONFIG = {
-      backend: {
-        name: "github",
-        repo: "ShevtsovAndrey/Media",
-        branch: "main"
-      },
-      site_url: "https://shevtsovandrey.github.io/Media",
-      media_folder: "assets/img",
-      public_folder: "/assets/img",
-      collections: [{
-        name: "gallery",
-        label: "Gallery",
-        folder: "data",
-        create: true,
-        format: "json",
-        extension: "json",
-        fields: [
-          { label: "Title", name: "title", widget: "string" },
-          { label: "Location", name: "location", widget: "string" },
-          { label: "Description", name: "description", widget: "text", required: false },
-          { label: "Photo", name: "image", widget: "image" }
-        ]
-      }]
-    };
-  </script>
-  <script src="https://unpkg.com/netlify-cms@2.10.19/dist/netlify-cms.js"></script>
+  <!-- Стабильная версия 3.0.12, где implicit auth для GitHub работает без сбоев -->
+  <script src="https://cdn.jsdelivr.net/npm/decap-cms@3.0.12/dist/decap-cms.js"></script>
 </body>
 </html>
