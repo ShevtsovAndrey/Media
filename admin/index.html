@@ -3,21 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ADMIN Shevtsov Media</title>
+  <title>Admin SM</title>
   <style>
     body {
       margin: 0;
       padding: 0;
       background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     #nc-root {
       min-height: 100vh;
     }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #666;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
-  <div id="nc-root"></div>
-  <!-- Загружаем CMS после DOM -->
-  <script src="https://unpkg.com/decap-cms@2.10.19/dist/decap-cms.js"></script>
+  <div id="nc-root">
+    <div class="loading">Loading admin...</div>
+  </div>
+  
+  <script>
+    // Ждём полной загрузки DOM
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initCMS);
+    } else {
+      initCMS();
+    }
+    
+    function initCMS() {
+      // Проверяем, что элемент существует
+      const root = document.getElementById('nc-root');
+      if (!root) {
+        console.error('nc-root element not found!');
+        return;
+      }
+      
+      // Загружаем CMS
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/decap-cms@2.10.19/dist/decap-cms.js';
+      script.onload = function() {
+        console.log('Decap CMS loaded');
+      };
+      script.onerror = function() {
+        console.error('Failed to load Decap CMS');
+      };
+      document.body.appendChild(script);
+    }
+  </script>
 </body>
 </html>
