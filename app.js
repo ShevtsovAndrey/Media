@@ -12,6 +12,9 @@ const GITHUB_CONFIG = {
     jsonPath: 'data/gallery.json'
 };
 
+const S3Client = window.AWS.S3Client;
+const PutObjectCommand = window.AWS.PutObjectCommand;
+const DeleteObjectCommand = window.AWS.DeleteObjectCommand;
 const isAdmin = !!localStorage.getItem('github_token');
 if (isAdmin) document.getElementById('addBtn').style.display = 'flex';
 
