@@ -87,7 +87,7 @@ body {
 /* Кнопка "+" */
 .add-btn {
     position: fixed; bottom: 30px; right: 30px;
-    width: 56px; height: 56px; background: #ffffff; color: white;
+    width: 56px; height: 56px; background: #ffffff; color: rgb(0, 0, 0);
     border: none; border-radius: 50%; font-size: 24px; font-weight: 300;
     cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     z-index: 100; display: flex; align-items: center; justify-content: center;
