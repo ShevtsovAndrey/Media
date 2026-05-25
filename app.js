@@ -14,9 +14,9 @@ const GITHUB_CONFIG = {
 };
 
 // Инициализация S3 клиента
-const S3Client = window.AWS.Client.S3Client;
-const PutObjectCommand = window.AWS.Client.PutObjectCommand;
-const DeleteObjectCommand = window.AWS.Client.DeleteObjectCommand;
+const S3Client = window.AWS.S3Client;
+const PutObjectCommand = window.AWS.PutObjectCommand;
+const DeleteObjectCommand = window.AWS.DeleteObjectCommand;
 const s3 = new S3Client({
     region: YANDEX_CONFIG.region,
     endpoint: YANDEX_CONFIG.endpoint,
