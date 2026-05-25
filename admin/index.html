@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin SM</title>
+  <title>Admin - Галерея</title>
   <style>
     body {
       margin: 0;
@@ -14,48 +14,12 @@
     #nc-root {
       min-height: 100vh;
     }
-    .loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #666;
-      font-size: 18px;
-    }
   </style>
 </head>
 <body>
-  <div id="nc-root">
-    <div class="loading">Loading admin...</div>
-  </div>
+  <div id="nc-root"></div>
   
-  <script>
-    // Ждём полной загрузки DOM
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initCMS);
-    } else {
-      initCMS();
-    }
-    
-    function initCMS() {
-      // Проверяем, что элемент существует
-      const root = document.getElementById('nc-root');
-      if (!root) {
-        console.error('nc-root element not found!');
-        return;
-      }
-      
-      // Загружаем CMS
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/decap-cms@2.10.19/dist/decap-cms.js';
-      script.onload = function() {
-        console.log('Decap CMS loaded');
-      };
-      script.onerror = function() {
-        console.error('Failed to load Decap CMS');
-      };
-      document.body.appendChild(script);
-    }
-  </script>
+  <!-- Используем официальный CDN Decap CMS -->
+  <script src="https://cdn.jsdelivr.net/npm/decap-cms@3.3.2/dist/decap-cms.js"></script>
 </body>
 </html>
