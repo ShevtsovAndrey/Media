@@ -137,21 +137,16 @@ const img = document.createElement('img');
 img.src = imgUrl;
 img.alt = photo.title;
 img.loading = 'lazy';
-img.style.cursor = 'zoom-in';
-img.style.touchAction = 'manipulation'; // важно для мобильных
+img.style.cursor = 'pointer';
 
 img.onerror = () => { card.style.display = 'none'; };
 
-img.onclick = (e) => {
+// ТОЛЬКО click. На iOS 16+ он работает идеально, если есть cursor:pointer
+img.addEventListener('click', (e) => {
+    e.preventDefault(); // Блокирует попытку Safari/Chrome "открыть картинку"
     e.stopPropagation();
     openLightbox(imgUrl);
-};
-// Дублируем для тач-устройств
-img.ontouchend = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    openLightbox(imgUrl);
-};
+});
 
     card.innerHTML = `
         ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
@@ -287,7 +282,9 @@ async function syncJSON(changes, action, retries = 2) {
         throw new Error(errData.message || `GitHub API error ${putRes.status}`);
     }
 }
+// === ПОЛНОЭКРАННЫЙ ПРОСМОТР (рабочая версия для iOS + Desktop) ===
 function openLightbox(imgUrl) {
+    // Создаём оверлей, если его нет
     let lb = document.getElementById('lightbox');
     if (!lb) {
         lb = document.createElement('div');
@@ -296,51 +293,54 @@ function openLightbox(imgUrl) {
         lb.innerHTML = '<img src="" alt="">';
         document.body.appendChild(lb);
         
-        // Закрытие по клику И по тачу (для мобильных)
-        const close = () => {
+        // Закрытие по клику в любое место оверлея
+        lb.addEventListener('click', () => {
             lb.classList.remove('active');
-            setTimeout(() => lb.remove(), 200);
-        };
-        
-        lb.addEventListener('click', close);
-        lb.addEventListener('touchend', (e) => {
-            e.preventDefault(); // убираем эмуляцию клика после тача
-            close();
+            setTimeout(() => {
+                lb.remove();
+            }, 200);
         });
         
-        // Закрытие по Esc
+        // Закрытие по клавише Esc
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lb.classList.contains('active')) {
-                close();
+            if (e.key === 'Escape' && document.getElementById('lightbox')) {
+                const box = document.getElementById('lightbox');
+                box.classList.remove('active');
+                setTimeout(() => box.remove(), 200);
             }
         });
     }
     
+    // Находим картинку внутри оверлея
     const img = lb.querySelector('img');
     
-    // Показываем спиннер пока грузится
+    // Скрываем пока грузится
     img.style.opacity = '0';
-    img.style.transition = 'opacity 0.2s';
+    img.style.transition = 'opacity 0.15s ease';
     
+    // Задаём источник
     img.src = imgUrl;
     
+    // Функция показа
     const show = () => {
         img.style.opacity = '1';
         lb.classList.add('active');
     };
     
-    if (img.complete) {
+    // Если картинка уже в кэше — показываем сразу
+    if (img.complete && img.naturalWidth !== 0) {
         show();
     } else {
+        // Иначе ждём загрузки
         img.onload = show;
         img.onerror = () => {
-            alert('Не удалось загрузить изображение');
+            console.error('Не удалось загрузить изображение:', imgUrl);
             lb.remove();
         };
     }
 }
 
-// Делаем функцию глобальной
+// Делаем функцию доступной глобально (для отладки и совместимости)
 window.openLightbox = openLightbox;
 // Старт
 loadGallery();

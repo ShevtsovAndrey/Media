@@ -12,8 +12,10 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
 }
 
 .photo-card img {
-    display: block; width: 100%; height: auto; max-height: 60vh;
-    object-fit: contain; transition: transform 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    cursor: pointer;
+    user-select: none;
 }
 .photo-card:hover img { transform: scale(1.02); }
 
@@ -31,6 +33,7 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
     border: none; border-radius: 50%; font-size: 22px; font-weight: bold;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4); transition: transform 0.2s;
+    pointer-events: auto; /* Кнопка "-" перехватывает клик */
 }
 .delete-btn:hover { transform: scale(1.1); }
 
@@ -42,8 +45,7 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
     display: flex; 
     align-items: center; 
     justify-content: center;
-    transition: transform 0.2s, 
-    background 0.2s;
+    transition: transform 0.2s, background 0.2s;
 }
 .add-btn:hover { transform: scale(1.1); background: #27ae60; }
 .add-btn:disabled { background: #555; cursor: not-allowed; transform: none; }
@@ -59,8 +61,8 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(255,255,255,0.05); /* почти прозрачный */
-    backdrop-filter: blur(25px); /* размытие фона */
-    -webkit-backdrop-filter: blur(25px); /* для Safari/iOS */
+    backdrop-filter: blur(12px); /* размытие фона */
+    -webkit-backdrop-filter: blur(12px); /* для Safari/iOS */
     display: flex; align-items: center; justify-content: center;
     z-index: 1000;
     cursor: zoom-out;
