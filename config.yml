@@ -1,0 +1,20 @@
+backend:
+  name: github
+  repo: ShevtsovAndrey/Media
+  branch: main
+
+media_folder: "assets/img"
+public_folder: "/assets/img"
+
+collections:
+  - name: "gallery"
+    label: "Галерея"
+    folder: "data"
+    create: true
+    format: "json"
+    extension: "json"
+    fields:
+      - { label: "Название", name: "title", widget: "string" }
+      - { label: "Локация", name: "location", widget: "string", hint: "Например: Москва, Горы, Офис" }
+      - { label: "Описание", name: "description", widget: "text", required: false }
+      - { label: "Фото", name: "image", widget: "image" }
