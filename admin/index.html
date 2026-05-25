@@ -3,12 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin</title>
-  <style>body{margin:0;font-family:sans-serif;background:#f0f2f5}#nc-root{min-height:100vh}</style>
+  <title>Admin Panel</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; }
+    #nc-root { min-height: 100vh; }
+    .loading { display: flex; justify-content: center; align-items: center; height: 100vh; color: #666; }
+  </style>
 </head>
 <body>
-  <div id="nc-root"></div>
+  <div id="nc-root">
+    <div class="loading">Loading CMS...</div>
+  </div>
+  
   <script>
+    // Явно задаём конфиг ПЕРЕД загрузкой CMS
     window.CMS_CONFIG = {
       backend: {
         name: "github",
@@ -36,8 +44,26 @@
         ]
       }]
     };
+    
+    console.log('CMS Config loaded:', window.CMS_CONFIG);
   </script>
-  <!-- ?v=3 заставляет браузер скачать свежий скрипт, игнорируя кэш -->
-  <script src="https://cdn.jsdelivr.net/npm/decap-cms@3.3.2/dist/decap-cms.js?v=3"></script>
+  
+  <!-- Загружаем CMS с принудительным сбросом кэша -->
+  <script src="https://cdn.jsdelivr.net/npm/decap-cms@3.3.2/dist/decap-cms.js"></script>
+  
+  <script>
+    // Проверяем, что CMS загрузилась
+    window.onload = function() {
+      setTimeout(function() {
+        if (typeof CMS === 'undefined') {
+          console.error('CMS not loaded!');
+          document.getElementById('nc-root').innerHTML = 
+            '<div style="color:red;padding:20px">Error: CMS failed to load. Check console.</div>';
+        } else {
+          console.log('CMS loaded successfully');
+        }
+      }, 3000);
+    };
+  </script>
 </body>
 </html>
