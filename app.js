@@ -1,22 +1,10 @@
-// === БЕЗОПАСНОЕ ПОЛУЧЕНИЕ AWS SDK ===
-// UMD-сборка может положить классы в window или window.AWS
-const sdk = window.AWS || window["@aws-sdk/client-s3"] || {};
-const S3Client = sdk.S3Client || (typeof window.S3Client !== 'undefined' ? window.S3Client : null);
-const PutObjectCommand = sdk.PutObjectCommand || (typeof window.PutObjectCommand !== 'undefined' ? window.PutObjectCommand : null);
-const DeleteObjectCommand = sdk.DeleteObjectCommand || (typeof window.DeleteObjectCommand !== 'undefined' ? window.DeleteObjectCommand : null);
-
-if (!S3Client) {
-    console.error('AWS SDK не загружен. Проверь консоль и интернет.');
-    alert('Ошибка инициализации SDK. Проверь F12 → Console.');
-}
-
 // === НАСТРОЙКИ (вставь свои данные) ===
 const YANDEX_CONFIG = {
     region: 'ru-central1',
     endpoint: 'https://storage.yandexcloud.net',
-    bucket: 'my-gallery-photos-777',      // ← ТВОЙ БАКЕТ
-    accessKeyId: 'YCAJEdsduslR2tqI4X7bloeTg',    // ← ТВОЙ ACCESS KEY
-    secretAccessKey: 'YCNSa7x9zzWqAGzAI8Iyvv6j3475TIpIy7PGqEs5' // ← ТВОЙ SECRET KEY
+    bucket: 'my-gallery-photos-777',
+    accessKeyId: 'YCAJEdsduslR2tqI4X7bloeTg',
+    secretAccessKey: 'YCNSa7x9zzWqAGzAI8Iyvv6j3475TIpIy7PGqEs5'
 };
 
 const GITHUB_CONFIG = {
@@ -25,16 +13,16 @@ const GITHUB_CONFIG = {
     jsonPath: 'data/gallery.json'
 };
 
-// Инициализация клиента
-const s3 = new S3Client({
+// Инициализация AWS SDK v2
+AWS.config.update({
+    accessKeyId: YANDEX_CONFIG.accessKeyId,
+    secretAccessKey: YANDEX_CONFIG.secretAccessKey,
     region: YANDEX_CONFIG.region,
     endpoint: YANDEX_CONFIG.endpoint,
-    credentials: {
-        accessKeyId: YANDEX_CONFIG.accessKeyId,
-        secretAccessKey: YANDEX_CONFIG.secretAccessKey
-    },
-    forcePathStyle: true // Обязательно для Яндекса
+    s3ForcePathStyle: true // Обязательно для Яндекса
 });
+
+const s3 = new AWS.S3();
 
 // Проверка админа
 const isAdmin = !!localStorage.getItem('github_token');
@@ -88,7 +76,7 @@ document.getElementById('addBtn').addEventListener('click', () => {
 });
 
 // Загрузка файлов
-document.getElementById('fileInput').addEventListener('change', async (e) => {
+document.getElementById('fileInput').addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
@@ -96,51 +84,66 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
     btn.textContent = '⏳';
     btn.disabled = true;
 
-    for (const file of files) {
-        try {
-            const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
+    let uploaded = 0;
+
+    files.forEach((file, fileIndex) => {
+        const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
+        
+        const params = {
+            Bucket: YANDEX_CONFIG.bucket,
+            Key: key,
+            Body: file,
+            ContentType: file.type
+        };
+
+        s3.upload(params, (err, data) => {
+            if (err) {
+                console.error(err);
+                alert(`Ошибка ${file.name}: ${err.message}`);
+            } else {
+                // Успешная загрузка
+                syncJSON([{ title: file.name.split('.')[0], key }], 'add')
+                    .then(() => {
+                        renderCard({ title: file.name.split('.')[0], key }, -1);
+                    });
+            }
             
-            await s3.send(new PutObjectCommand({
-                Bucket: YANDEX_CONFIG.bucket,
-                Key: key,
-                Body: file,
-                ContentType: file.type
-            }));
-
-            await syncJSON([{ title: file.name.split('.')[0], key }], 'add');
-            renderCard({ title: file.name.split('.')[0], key }, -1);
-        } catch (err) {
-            console.error(err);
-            alert(`Ошибка ${file.name}: ${err.message}`);
-        }
-    }
-
-    btn.textContent = '+';
-    btn.disabled = false;
-    e.target.value = '';
+            uploaded++;
+            if (uploaded === files.length) {
+                btn.textContent = '+';
+                btn.disabled = false;
+                e.target.value = '';
+            }
+        });
+    });
 });
 
 // Удаление фото
-async function deletePhoto(key, title, index) {
+function deletePhoto(key, title, index) {
     if (!confirm(`Удалить "${title}"?`)) return;
 
     const cards = document.querySelectorAll('.photo-card');
     cards[index].style.opacity = '0.3';
     cards[index].style.pointerEvents = 'none';
 
-    try {
-        await s3.send(new DeleteObjectCommand({
-            Bucket: YANDEX_CONFIG.bucket,
-            Key: key
-        }));
-        await syncJSON([{ key }], 'delete');
-        cards[index].remove();
-    } catch (err) {
-        console.error(err);
-        alert('Ошибка удаления: ' + err.message);
-        cards[index].style.opacity = '1';
-        cards[index].style.pointerEvents = 'auto';
-    }
+    const params = {
+        Bucket: YANDEX_CONFIG.bucket,
+        Key: key
+    };
+
+    s3.deleteObject(params, (err) => {
+        if (err) {
+            console.error(err);
+            alert('Ошибка удаления: ' + err.message);
+            cards[index].style.opacity = '1';
+            cards[index].style.pointerEvents = 'auto';
+        } else {
+            syncJSON([{ key }], 'delete')
+                .then(() => {
+                    cards[index].remove();
+                });
+        }
+    });
 }
 
 // Синхронизация с GitHub JSON
