@@ -133,20 +133,25 @@ function renderCard(photo, index) {
     const imgUrl = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${photo.key}`;
 
     // Создаём img элемент программно — так безопаснее
-    const img = document.createElement('img');
-    img.src = imgUrl;
-    img.alt = photo.title;
-    img.loading = 'lazy';
-    img.style.cursor = 'zoom-in';
-    
-    // Обработчик ошибки загрузки
-    img.onerror = () => { card.style.display = 'none'; };
-    
-    // Обработчик клика — открываем лайтбокс
-    img.onclick = (e) => {
-        e.stopPropagation(); // Чтобы не сработал клик по карточке/удалению
-        openLightbox(imgUrl);
-    };
+const img = document.createElement('img');
+img.src = imgUrl;
+img.alt = photo.title;
+img.loading = 'lazy';
+img.style.cursor = 'zoom-in';
+img.style.touchAction = 'manipulation'; // важно для мобильных
+
+img.onerror = () => { card.style.display = 'none'; };
+
+img.onclick = (e) => {
+    e.stopPropagation();
+    openLightbox(imgUrl);
+};
+// Дублируем для тач-устройств
+img.ontouchend = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    openLightbox(imgUrl);
+};
 
     card.innerHTML = `
         ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
@@ -291,24 +296,51 @@ function openLightbox(imgUrl) {
         lb.innerHTML = '<img src="" alt="">';
         document.body.appendChild(lb);
         
-        lb.addEventListener('click', () => {
+        // Закрытие по клику И по тачу (для мобильных)
+        const close = () => {
             lb.classList.remove('active');
             setTimeout(() => lb.remove(), 200);
+        };
+        
+        lb.addEventListener('click', close);
+        lb.addEventListener('touchend', (e) => {
+            e.preventDefault(); // убираем эмуляцию клика после тача
+            close();
+        });
+        
+        // Закрытие по Esc
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lb.classList.contains('active')) {
+                close();
+            }
         });
     }
     
     const img = lb.querySelector('img');
+    
+    // Показываем спиннер пока грузится
+    img.style.opacity = '0';
+    img.style.transition = 'opacity 0.2s';
+    
     img.src = imgUrl;
     
-    // Показываем либо сразу (если в кэше), либо после загрузки
-    if (img.complete) {
+    const show = () => {
+        img.style.opacity = '1';
         lb.classList.add('active');
+    };
+    
+    if (img.complete) {
+        show();
     } else {
-        img.onload = () => lb.classList.add('active');
+        img.onload = show;
+        img.onerror = () => {
+            alert('Не удалось загрузить изображение');
+            lb.remove();
+        };
     }
 }
 
-// Делаем функцию глобальной (на всякий случай)
+// Делаем функцию глобальной
 window.openLightbox = openLightbox;
 // Старт
 loadGallery();

@@ -58,12 +58,15 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
 .lightbox {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.95);
+    background: rgba(255,255,255,0.05); /* почти прозрачный */
+    backdrop-filter: blur(25px); /* размытие фона */
+    -webkit-backdrop-filter: blur(25px); /* для Safari/iOS */
     display: flex; align-items: center; justify-content: center;
     z-index: 1000;
     cursor: zoom-out;
     opacity: 0; pointer-events: none;
     transition: opacity 0.2s ease;
+    touch-action: manipulation; /* убирает задержку тача на мобильных */
 }
 .lightbox.active {
     opacity: 1; pointer-events: auto;
@@ -72,4 +75,11 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
     max-width: 100%; max-height: 100%;
     object-fit: contain;
     box-shadow: none; border: none; outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Убираем задержку кликов на мобильных для всей галереи */
+.photo-card img {
+    touch-action: manipulation;
 }
