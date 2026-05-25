@@ -1,21 +1,20 @@
 backend:
-name: github
-repo: ShevtsovAndrey/Media
-branch: main
-publish_mode: editorial_workflow
+  name: github
+  repo: твой-логин/название-репозитория
+  branch: main
 
-media_folder: "images"
-public_folder: "/images"
+media_folder: "assets/img"
+public_folder: "/assets/img"
 
 collections:
-- name "photos"
-label: "Фотографии"
-folder: "photos"
-create: true
-fields:
-- {name: "title", label: "Название", widget: "string"
-}
-- {name: "image", label: "Изображение", widget: "image"
-}
-- {name: "tags", label: "Название", widget: "list"
-}
+  - name: "gallery"
+    label: "Галерея"
+    folder: "data"
+    create: true
+    format: "json"
+    extension: "json"
+    fields:
+      - { label: "Название", name: "title", widget: "string" }
+      - { label: "Локация", name: "location", widget: "string", hint: "Например: Москва, Горы, Офис" }
+      - { label: "Описание", name: "description", widget: "text", required: false }
+      - { label: "Фото", name: "image", widget: "image" }

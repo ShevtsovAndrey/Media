@@ -1,13 +1,32 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Shevtsov Media</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Моя Галерея</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="placeholdertext">Сайт Shevtsov Media в разработке
+  <header>
+    <h1>Галерея</h1>
+    <div class="filters">
+      <select id="location-filter">
+        <option value="all">Все локации</option>
+      </select>
+      <select id="color-filter">
+        <option value="all">Все цвета</option>
+      </select>
+      <select id="sort-by">
+        <option value="new">Сначала новые</option>
+        <option value="location">По локации</option>
+      </select>
     </div>
+  </header>
 
+  <main id="gallery-grid" class="gallery-grid"></main>
+
+  <!-- Библиотека для анализа доминантного цвета -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
+  <script src="gallery.js"></script>
 </body>
 </html>
