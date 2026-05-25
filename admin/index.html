@@ -3,30 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel</title>
-  <style>
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; }
-    #nc-root { min-height: 100vh; }
-    .loading { display: flex; justify-content: center; align-items: center; height: 100vh; color: #666; }
-  </style>
+  <title>Admin</title>
 </head>
 <body>
-  <div id="nc-root">
-    <div class="loading">Loading CMS...</div>
-  </div>
-  
+  <div id="nc-root"></div>
   <script>
-    // Явно задаём конфиг ПЕРЕД загрузкой CMS
     window.CMS_CONFIG = {
       backend: {
         name: "github",
         repo: "ShevtsovAndrey/Media",
-        branch: "main",
-        auth_type: "implicit",
-        client_id: "Ov23lic7FhjBNL3GIDgc"
+        branch: "main"
       },
       site_url: "https://shevtsovandrey.github.io/Media",
-      display_url: "https://shevtsovandrey.github.io/Media",
       media_folder: "assets/img",
       public_folder: "/assets/img",
       collections: [{
@@ -44,26 +32,7 @@
         ]
       }]
     };
-    
-    console.log('CMS Config loaded:', window.CMS_CONFIG);
   </script>
-  
-  <!-- Загружаем CMS с принудительным сбросом кэша -->
-  <script src="https://cdn.jsdelivr.net/npm/decap-cms@3.3.2/dist/decap-cms.js"></script>
-  
-  <script>
-    // Проверяем, что CMS загрузилась
-    window.onload = function() {
-      setTimeout(function() {
-        if (typeof CMS === 'undefined') {
-          console.error('CMS not loaded!');
-          document.getElementById('nc-root').innerHTML = 
-            '<div style="color:red;padding:20px">Error: CMS failed to load. Check console.</div>';
-        } else {
-          console.log('CMS loaded successfully');
-        }
-      }, 3000);
-    };
-  </script>
+  <script src="https://unpkg.com/netlify-cms@2.10.19/dist/netlify-cms.js"></script>
 </body>
 </html>
