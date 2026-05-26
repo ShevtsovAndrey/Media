@@ -64,13 +64,38 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
 
 .add-btn {
     position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px;
-    background: #2ecc71; color: white; border: none; border-radius: 50%;
-    font-size: 32px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    z-index: 100; display: flex; align-items: center; justify-content: center;
-    transition: transform 0.2s, background 0.2s;
+    
+    /* Glassmorphism */
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(12px); /* размытие фона под кнопкой */
+    -webkit-backdrop-filter: blur(12px); /* для Safari/iOS */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* тонкая светлая рамка */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); /* мягкая тень */
+    
+    color: white; 
+    border: none; 
+    border-radius: 50%;
+    font-size: 32px; 
+    z-index: 100; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    transition: all 0.2s ease;
 }
-.add-btn:hover { transform: scale(1.1); background: #27ae60; }
-.add-btn:disabled { background: #555; cursor: not-allowed; transform: none; }
+
+.add-btn:hover {
+    transform: scale(1.1);
+    background: rgba(46, 204, 113, 0.4); /* чуть ярче при наведении */
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.add-btn:disabled {
+    background: rgba(85, 85, 85, 0.3);
+    backdrop-filter: blur(8px);
+    cursor: not-allowed; 
+    transform: none;
+    box-shadow: none;
+}
 
 .loading { color: #666; padding: 40px; text-align: center; width: 100%; }
 
