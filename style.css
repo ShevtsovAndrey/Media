@@ -71,17 +71,21 @@ body {
 }
 
 .add-btn {
-    position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px;
-    
-    /* Glassmorphism */
-    background: rgba(255, 255, 255, 0.027);
+    position: fixed; 
+    bottom: 24px; 
+    right: 24px; 
+    width: 48px; 
+    height: 48px;
+
+    background: rgba(255, 255, 255, 0.025);
     backdrop-filter: blur(12px); /* размытие фона под кнопкой */
     -webkit-backdrop-filter: blur(12px); /* для Safari/iOS */
     border: 3px solid rgba(255, 255, 255, 0.2); /* тонкая светлая рамка */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); /* мягкая тень */
     
     color: white; 
-    border: none; 
+  border: 4px; 
+    border-color: rgba(255, 255, 255, 0.05);
     border-radius: 50%;
     font-size: 32px; 
     z-index: 100; 
@@ -92,8 +96,8 @@ body {
 }
 
 .add-btn:hover {
-    transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.4); /* чуть ярче при наведении */
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.1); /* чуть ярче при наведении */
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -105,11 +109,54 @@ body {
     box-shadow: none;
 }
 
+
+.sort-btn {
+position: fixed; 
+bottom: 24px; 
+left: 24px; 
+width: 48px; 
+height: 48px;
+    background: rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); 
+ color: #fff; 
+  border: 4px; 
+  border-color: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+ font-size: 24px;
+    z-index: 100; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    transition: all 0.2s ease; 
+    user-select: none;
+}
+
+.sort-btn:hover { 
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.1); /* чуть ярче при наведении */
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+.sort-btn:active { 
+    transform: scale(0.95); 
+}
+
+
+
+
+
+
+
+
+
+
+
 .loading { 
     color: #666; 
     padding: 40px; 
     text-align: center; 
     width: 100%; 
+    z-index: 99;
 }
 
 /* Лайтбокс с размытием */
@@ -167,4 +214,10 @@ body {
 }
 .drag-overlay.active {
     opacity: 1; pointer-events: auto;
+}
+/* Заголовок года для сортировки по дате */
+.year-header {
+    width: 100%; text-align: center; color: #e0e0e0; font-size: 26px;
+    font-weight: 300; letter-spacing: 3px; margin: 40px 0 20px;
+    text-transform: uppercase; opacity: 0.8;
 }
