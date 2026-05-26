@@ -231,42 +231,36 @@ document.getElementById('addBtn').addEventListener('click', () => {
     document.getElementById('fileInput').click();
 });
 
-//ДРАГДРОП
-if (isAdmin) {
-    const dragOverlay = document.getElementById('dragOverlay');
+// === DRAG & DROP (Прямой и простой) ===
+const dragOverlay = document.getElementById('dragOverlay');
+
+// 1. Блокируем браузер, чтобы он не открывал файл сам
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+    document.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    }, false);
+});
+
+// 2. Показываем оверлей, когда файл заходит в окно
+document.addEventListener('dragenter', () => {
+    if (dragOverlay) dragOverlay.classList.add('active');
+});
+
+// 3. Скрываем, когда файл уводят из окна
+document.addEventListener('dragleave', () => {
+    if (dragOverlay) dragOverlay.classList.remove('active');
+});
+
+// 4. При броске вызываем твою функцию загрузки
+document.addEventListener('drop', async (e) => {
+    if (dragOverlay) dragOverlay.classList.remove('active');
     
-    if (dragOverlay) {
-        // Когда файл входит в окно
-        window.addEventListener('dragenter', (e) => {
-            e.preventDefault();
-            dragOverlay.classList.add('active');
-            console.log('📥 dragenter - показываю оверлей');
-        }, false);
-
-        // Когда файл двигается над окном
-        window.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            // Ничего не делаем, просто блокируем стандартное поведение
-        }, false);
-
-        // Когда файл уходит из окна
-        window.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dragOverlay.classList.remove('active');
-            console.log('📤 dragleave - скрываю оверлей');
-        }, false);
-
-        // Когда файл бросают
-        window.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dragOverlay.classList.remove('active');
-            console.log('✋ drop - файл брошен');
-            console.log('Файлов:', e.dataTransfer.files.length);
-        }, false);
-    } else {
-        console.error('❌ Элемент #dragOverlay не найден!');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) {
+        await uploadFiles(files); // ← Вызывает ровно ту же функцию, что и "+"
     }
-}
+});
 
 // Загрузка файлов (последовательно, с очередью)
 document.getElementById('fileInput').addEventListener('change', async (e) => {
