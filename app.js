@@ -231,36 +231,6 @@ document.getElementById('addBtn').addEventListener('click', () => {
     document.getElementById('fileInput').click();
 });
 
-// === DRAG & DROP (Прямой и простой) ===
-const dragOverlay = document.getElementById('dragOverlay');
-
-// 1. Блокируем браузер, чтобы он не открывал файл сам
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
-    document.addEventListener(evt, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    }, false);
-});
-
-// 2. Показываем оверлей, когда файл заходит в окно
-document.addEventListener('dragenter', () => {
-    if (dragOverlay) dragOverlay.classList.add('active');
-});
-
-// 3. Скрываем, когда файл уводят из окна
-document.addEventListener('dragleave', () => {
-    if (dragOverlay) dragOverlay.classList.remove('active');
-});
-
-// 4. При броске вызываем твою функцию загрузки
-document.addEventListener('drop', async (e) => {
-    if (dragOverlay) dragOverlay.classList.remove('active');
-    
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-    if (files.length > 0) {
-        await uploadFiles(files); // ← Вызывает ровно ту же функцию, что и "+"
-    }
-});
 
 // Загрузка файлов (последовательно, с очередью)
 document.getElementById('fileInput').addEventListener('change', async (e) => {
@@ -399,6 +369,67 @@ function openLightbox(imgUrl) {
 }
 
 window.openLightbox = openLightbox;
+
+
+
+// === DRAG & DROP (Ждёт загрузки страницы) ===
+window.addEventListener('load', () => {
+    const dragOverlay = document.getElementById('dragOverlay');
+    
+    if (!dragOverlay) {
+        console.error('❌ ОШИБКА: Элемент #dragOverlay не найден в HTML! Проверь index.html');
+        return; // Останавливаемся, чтобы не ломать остальное
+    }
+
+    console.log('✅ Drag&Drop инициализирован');
+
+    // 1. Блокируем стандартное открытие файла браузером
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+
+    // 2. Показываем оверлей
+    document.addEventListener('dragenter', () => {
+        dragOverlay.classList.add('active');
+        console.log('👁️ Оверлей показан');
+    }, false);
+
+    // 3. Скрываем, если увели мышку за окно
+    document.addEventListener('dragleave', (e) => {
+        // Проверяем, что ушли именно за пределы окна, а не на другой элемент
+        if (e.clientX === 0 && e.clientY === 0) {
+            dragOverlay.classList.remove('active');
+            console.log('🙈 Оверлей скрыт');
+        }
+    }, false);
+
+    // 4. Обработка броска
+    document.addEventListener('drop', async (e) => {
+        dragOverlay.classList.remove('active');
+        
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        
+        if (files.length === 0) {
+            console.warn('⚠️ Файлы не найдены или не являются изображениями');
+            return;
+        }
+
+        console.log(`📥 Получено файлов: ${files.length}`);
+        console.log('Первый файл:', files[0].name, files[0].size, 'bytes');
+
+        // Вызываем ТВОЮ функцию uploadFiles
+        if (typeof uploadFiles === 'function') {
+            await uploadFiles(files);
+        } else {
+            console.error('❌ Функция uploadFiles не найдена!');
+        }
+    }, false);
+});
+
+
 
 // Старт
 loadGallery();
