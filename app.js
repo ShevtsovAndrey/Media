@@ -366,5 +366,75 @@ function openLightbox(imgUrl) {
 }
 
 window.openLightbox = openLightbox;
+
+
+
+if (isAdmin) {
+    document.addEventListener('DOMContentLoaded', () => {
+        const dragOverlay = document.getElementById('dragOverlay');
+        if (!dragOverlay) return; // Если нет в HTML — просто не включается
+
+        let dragCounter = 0;
+
+        document.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            dragOverlay.classList.add('active');
+        });
+
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter === 0) dragOverlay.classList.remove('active');
+        });
+
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        document.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            dragOverlay.classList.remove('active');
+
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length === 0) return;
+
+            // Используем ТВОЮ существующую логику загрузки
+            const btn = document.getElementById('addBtn');
+            const originalText = btn.textContent;
+            btn.textContent = '⏳';
+            btn.disabled = true;
+
+            for (const file of files) {
+                try {
+                    const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
+                    const title = file.name.split('.')[0];
+                    
+                    await new Promise((resolve, reject) => {
+                        s3.upload({
+                            Bucket: YANDEX_CONFIG.bucket,
+                            Key: key,
+                            Body: file,
+                            ContentType: file.type
+                        }, (err, data) => err ? reject(err) : resolve(data));
+                    });
+
+                    await syncJSON([{ title, key }], 'add');
+                    renderCard({ title, key }, -1);
+                } catch (err) {
+                    console.error(err);
+                    alert(`Ошибка ${file.name}`);
+                }
+            }
+
+            btn.textContent = originalText;
+            btn.disabled = false;
+        });
+    });
+}
+
+
+
 // Старт
 loadGallery();
