@@ -1,5 +1,13 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+body { 
+    background: #0a0a0a; 
+    font-family: system-ui, -apple-system, sans-serif; 
+    overflow-x: hidden; 
+}
 
 .gallery {
     display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
@@ -66,10 +74,10 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
     position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px;
     
     /* Glassmorphism */
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.027);
     backdrop-filter: blur(12px); /* размытие фона под кнопкой */
     -webkit-backdrop-filter: blur(12px); /* для Safari/iOS */
-    border: 1px solid rgba(255, 255, 255, 0.2); /* тонкая светлая рамка */
+    border: 3px solid rgba(255, 255, 255, 0.2); /* тонкая светлая рамка */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); /* мягкая тень */
     
     color: white; 
@@ -85,7 +93,7 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
 
 .add-btn:hover {
     transform: scale(1.1);
-    background: rgba(46, 204, 113, 0.4); /* чуть ярче при наведении */
+    background: rgba(255, 255, 255, 0.4); /* чуть ярче при наведении */
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -97,7 +105,12 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
     box-shadow: none;
 }
 
-.loading { color: #666; padding: 40px; text-align: center; width: 100%; }
+.loading { 
+    color: #666; 
+    padding: 40px; 
+    text-align: center; 
+    width: 100%; 
+}
 
 /* Лайтбокс с размытием */
 .lightbox {
@@ -125,4 +138,26 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
 @media (max-width: 768px) {
     .photo-card { max-width: 100%; }
     .photo-card img { max-height: 50vh; }
+}
+
+/* Drag & Drop оверлей */
+.drag-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.15); /* Очень лёгкое затемнение */
+    backdrop-filter: blur(8px); /* Лёгкий блюр фона */
+    -webkit-backdrop-filter: blur(8px); /* Для Safari/iOS */
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000; /* Выше всего, включая лайтбокс */
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    user-select: none;
+}
+.drag-overlay.active {
+    opacity: 1; pointer-events: auto;
 }
