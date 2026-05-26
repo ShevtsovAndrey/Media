@@ -135,7 +135,14 @@ async function loadGallery() {
 
         // 5. Рендерим галерею из синхронизированного списка
         gallery.innerHTML = '';
-        currentPhotos.forEach((photo, i) => renderCard(photo, i));
+        //currentPhotos.forEach((photo, i) => renderCard(photo, i));
+
+if (sortMode !== 'default') {
+    renderSortedGallery();
+} else {
+    currentPhotos.forEach((photo, i) => renderCard(photo, i));
+}
+
 
         if (currentPhotos.length === 0) {
             gallery.innerHTML = '<div class="loading">Нет фото. Нажми + чтобы добавить.</div>';
@@ -370,6 +377,150 @@ function openLightbox(imgUrl) {
 
 window.openLightbox = openLightbox;
 
+
+
+
+// СОРТИРОВКА ГАЛЕРЕИ ПО КНОПКЕ (ТЕСТ)
+
+// === СОРТИРОВКА ГАЛЕРЕИ ===
+let sortMode = localStorage.getItem('gallerySortMode') || 'default';
+const sortBtn = document.getElementById('sortBtn');
+const photoMetaCache = JSON.parse(localStorage.getItem('photoMetaCache') || '{}');
+
+// Обновляем иконку кнопки
+function updateSortIcon() {
+    if (!sortBtn) return;
+    const icons = { default: '🔄', date: '📅', color: '🎨' };
+    sortBtn.textContent = icons[sortMode];
+}
+updateSortIcon();
+
+// Переключение режима
+if (sortBtn) {
+    sortBtn.addEventListener('click', () => {
+        const modes = ['default', 'date', 'color'];
+        const idx = modes.indexOf(sortMode);
+        sortMode = modes[(idx + 1) % modes.length];
+        localStorage.setItem('gallerySortMode', sortMode);
+        updateSortIcon();
+        renderSortedGallery();
+    });
+}
+
+// Получение даты из имени файла (IMG_20250306_...) или кэша
+function getPhotoDate(key) {
+    if (photoMetaCache[key]?.date) return new Date(photoMetaCache[key].date);
+    const match = key.match(/(\d{4})(\d{2})(\d{2})/);
+    const date = match ? new Date(`${match[1]}-${match[2]}-${match[3]}`) : new Date();
+    photoMetaCache[key] = photoMetaCache[key] || {};
+    photoMetaCache[key].date = date.toISOString();
+    localStorage.setItem('photoMetaCache', JSON.stringify(photoMetaCache));
+    return date;
+}
+
+// Получение доминирующего цвета (Hue 0-360)
+async function getPhotoHue(key, imgUrl) {
+    if (photoMetaCache[key]?.hue !== undefined) return photoMetaCache[key].hue;
+    
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 50; canvas.height = 50;
+            ctx.drawImage(img, 0, 0, 50, 50);
+            
+            const data = ctx.getImageData(20, 20, 10, 10).data;
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+            }
+            r /= count; g /= count; b /= count;
+            
+            // RGB -> HSL -> Hue
+            const max = Math.max(r,g,b), min = Math.min(r,g,b);
+            let h = 0;
+            if (max !== min) {
+                const d = max - min;
+                if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+                else if (max === g) h = ((b - r) / d + 2) / 6;
+                else h = ((r - g) / d + 4) / 6;
+            }
+            const hue = Math.round(h * 360);
+            photoMetaCache[key] = photoMetaCache[key] || {};
+            photoMetaCache[key].hue = hue;
+            localStorage.setItem('photoMetaCache', JSON.stringify(photoMetaCache));
+            resolve(hue);
+        };
+        img.onerror = () => resolve(0);
+        img.src = imgUrl;
+    });
+}
+
+// Основная функция перерисовки с сортировкой
+async function renderSortedGallery() {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '<div class="loading">Сортировка...</div>';
+
+    // Загружаем фото из JSON
+    let photos = [];
+    try {
+        const token = localStorage.getItem('github_token');
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`, {
+            headers: { 'Authorization': `token ${token}` }
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            photos = JSON.parse(atob(data.content));
+        }
+    } catch(e) { 
+        console.error('Ошибка загрузки JSON:', e); 
+    }
+
+    if (photos.length === 0) {
+        gallery.innerHTML = '<div class="loading">Нет фото</div>';
+        return;
+    }
+
+    // Применяем сортировку
+    if (sortMode === 'date') {
+        photos.sort((a, b) => getPhotoDate(b.key) - getPhotoDate(a.key));
+    } else if (sortMode === 'color') {
+        // Асинхронно получаем hue для всех фото
+        const withHue = await Promise.all(photos.map(async p => ({
+            ...p,
+            hue: await getPhotoHue(p.key, `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`)
+        })));
+        // Сортировка по спектру: красный(0) -> желтый(60) -> зеленый(120) -> синий(240) -> фиолетовый
+        withHue.sort((a, b) => {
+            // Сдвиг для красоты: начинаем с красного
+            const shift = (h) => (h + 330) % 360;
+            return shift(a.hue) - shift(b.hue);
+        });
+        photos = withHue;
+    }
+
+    // Рендер
+    gallery.innerHTML = '';
+    let lastYear = null;
+
+    photos.forEach((photo, i) => {
+        // Заголовок года для режима даты
+        if (sortMode === 'date') {
+            const year = getPhotoDate(photo.key).getFullYear().toString();
+            if (year !== lastYear) {
+                const header = document.createElement('div');
+                header.className = 'year-header';
+                header.textContent = year;
+                gallery.appendChild(header);
+                lastYear = year;
+            }
+        }
+        renderCard(photo, i);
+    });
+}
 
 
 // === DRAG & DROP (Ждёт загрузки страницы) ===
