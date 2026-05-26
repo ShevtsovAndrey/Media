@@ -155,8 +155,8 @@ body {
     backdrop-filter: blur(8px); /* Лёгкий блюр фона */
     -webkit-backdrop-filter: blur(8px); /* Для Safari/iOS */
     display: flex; align-items: center; justify-content: center;
-    z-index: 2000; /* Выше всего, включая лайтбокс */
-    opacity: 0; pointer-events: none;
+    z-index: 100; /* Выше всего, включая лайтбокс */
+    opacity: 100; pointer-events: none;
     transition: opacity 0.25s ease;
     color: #fff;
     font-size: 22px;
