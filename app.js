@@ -514,7 +514,6 @@ async function getPhotoHue(key, imgUrl) {
 
 // Основная функция перерисовки с сортировкой
 // === СОРТИРОВКА (исправленная: без повторных запросов, с EXIF-датами) ===
-// === СОРТИРОВКА (с разделением на "известные" и "неизвестные" даты) ===
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Сортировка...</div>';
@@ -526,34 +525,19 @@ async function renderSortedGallery(photosSource) {
         return;
     }
 
-    // === РАЗДЕЛЯЕМ фото на "с датой" и "без даты" ===
-    const photosWithDate = [];
-    const photosWithoutDate = [];
-    
-    photos.forEach(photo => {
-        // Проверяем, что дата есть и валидна
-        if (photo.date && !isNaN(new Date(photo.date).getTime())) {
-            const year = new Date(photo.date).getFullYear();
-            // Отбрасываем абсурдные годы (меньше 2000)
-            if (year >= 2000 && year <= 2100) {
-                photosWithDate.push(photo);
-            } else {
-                photosWithoutDate.push(photo);
-            }
-        } else {
-            photosWithoutDate.push(photo);
-        }
-    });
-
-    // === СОРТИРОВКА фото с датами ===
+    // === СОРТИРОВКА ПО ДАТЕ ===
     if (sortMode === 'date') {
-        photosWithDate.sort((a, b) => {
-            const dateA = new Date(a.date).getTime();
-            const dateB = new Date(b.date).getTime();
-            return dateB - dateA; // Новые → старые
+        // Сортируем: новые → старые
+        photos.sort((a, b) => {
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateB - dateA;
         });
-    } else if (sortMode === 'color') {
-        const withHue = await Promise.all(photosWithDate.map(async p => {
+    }
+    
+    // === СОРТИРОВКА ПО ЦВЕТУ ===
+    else if (sortMode === 'color') {
+        const withHue = await Promise.all(photos.map(async p => {
             const cacheKey = `hue_${p.key}`;
             let hue = localStorage.getItem(cacheKey);
             if (hue === null) {
@@ -567,47 +551,51 @@ async function renderSortedGallery(photosSource) {
             const shift = (h) => (h + 330) % 360;
             return shift(a.hue) - shift(b.hue);
         });
-        photosWithDate.splice(0, photosWithDate.length, ...withHue);
+        photos = withHue;
     }
 
-    // === РЕНДЕР ===
+    // === РЕНДЕР С ГРУППИРОВКОЙ ===
     gallery.innerHTML = '';
-    
-    // 1. Сначала рендерим "Неизвестные данные" (ТОЛЬКО АДМИНУ)
-    if (isAdmin && photosWithoutDate.length > 0) {
-        const unknownHeader = document.createElement('div');
-        unknownHeader.className = 'year-header unknown-header';
-        unknownHeader.textContent = '📁 Неизвестные данные';
-        gallery.appendChild(unknownHeader);
-        
-        photosWithoutDate.forEach(photo => {
-            renderCard(photo, -1, true); // true = это фото без даты
-        });
-    }
-    
-    // 2. Потом рендерим фото с датами (с группировкой по годам)
-    if (photosWithDate.length > 0) {
-        let lastYear = null;
-        
-        photosWithDate.forEach(photo => {
-            if (sortMode === 'date') {
-                const year = new Date(photo.date).getFullYear().toString();
-                
-                if (year !== lastYear) {
-                    const header = document.createElement('div');
-                    header.className = 'year-header';
-                    header.textContent = year;
-                    gallery.appendChild(header);
-                    lastYear = year;
+    let lastYear = null;
+
+    photos.forEach(photo => {
+        // Заголовки годов ТОЛЬКО для режима даты
+         if (sortMode === 'date') {
+            // === Пробуем взять год из photo.date, иначе парсим из ключа ===
+            let year = null;
+            
+            if (photo.date && !isNaN(new Date(photo.date).getTime())) {
+                year = new Date(photo.date).getFullYear().toString();
+            } else if (photo.key) {
+                // Фоллбэк: парсим из key (177978825761_IMG_20250306_... → 2025)
+                const match = photo.key.match(/(\d{4})(\d{2})(\d{2})/);
+                if (match) {
+                    year = match[1];
+                } else {
+                    year = 'Неизвестно'; // На крайний случай
                 }
+            } else {
+                year = 'Неизвестно'; // Если вообще ничего нет
             }
             
-            renderCard(photo, -1, false);
-        });
-    }
+            // Если год сменился — добавляем заголовок
+            if (year !== lastYear) {
+                console.log(`📅 Добавляю заголовок: ${year}`);
+                const header = document.createElement('div');
+                header.className = 'year-header';
+                header.textContent = year;
+                gallery.appendChild(header);
+                lastYear = year;
+            }
+        }
+        
+        // Рендерим карточку
+        renderCard(photo, -1);
+    });
     
-    console.log(`✅ Отсортировано: ${photosWithDate.length} с датой, ${photosWithoutDate.length} без даты`);
+    console.log(`✅ Отсортировано ${photos.length} фото, режим: ${sortMode}`);
 }
+
 // === ЛЁГКИЙ АНАЛИЗ ЦВЕТА (10×10 пикселей, ~20мс на фото) ===
 function getPhotoHueSimple(imgUrl) {
     return new Promise(resolve => {
