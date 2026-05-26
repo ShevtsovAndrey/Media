@@ -167,4 +167,5 @@ body {
 }
 .drag-overlay.active {
     opacity: 1; pointer-events: auto;
+    transition: 0.25;
 }

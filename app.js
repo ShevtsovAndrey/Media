@@ -382,38 +382,36 @@ window.openLightbox = openLightbox;
 // === DRAG & DROP (исправленный) ===
 if (isAdmin) {
     const dragOverlay = document.getElementById('dragOverlay');
-    if (!dragOverlay) {
-        console.warn('⚠️ #dragOverlay не найден в HTML');
-    } else {
-        let dragCounter = 0;
-
-        document.addEventListener('dragenter', (e) => {
+    
+    // Предотвращаем стандартное поведение для ВСЕХ событий drag
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.body.addEventListener(eventName, (e) => {
             e.preventDefault();
-            dragCounter++;
-            dragOverlay.classList.add('active');
-        });
+            e.stopPropagation();
+        }, false);
+    });
 
-        document.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dragCounter--;
-            if (dragCounter === 0) dragOverlay.classList.remove('active');
-        });
+    // Показываем оверлей
+    document.body.addEventListener('dragenter', () => {
+        if (dragOverlay) dragOverlay.classList.add('active');
+    }, false);
 
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
+    document.body.addEventListener('dragleave', (e) => {
+        // Проверяем, что ушли за пределы окна
+        if (e.clientX === 0 && e.clientY === 0) {
+            if (dragOverlay) dragOverlay.classList.remove('active');
+        }
+    }, false);
 
-        document.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            dragCounter = 0;
-            dragOverlay.classList.remove('active');
-
-            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-            if (files.length > 0) {
-                await uploadFiles(files); // ← Та же функция, что и для кнопки +
-            }
-        });
-    }
+    // Обработка drop
+    document.body.addEventListener('drop', async (e) => {
+        if (dragOverlay) dragOverlay.classList.remove('active');
+        
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        if (files.length > 0) {
+            await uploadFiles(files);
+        }
+    }, false);
 }
 
 // Старт
