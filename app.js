@@ -560,20 +560,22 @@ async function renderSortedGallery(photosSource) {
 
     photos.forEach(photo => {
         // Заголовки годов ТОЛЬКО для режима даты
-          if (sortMode === 'date') {
+         if (sortMode === 'date') {
             // === Пробуем взять год из photo.date, иначе парсим из ключа ===
             let year = null;
             
             if (photo.date && !isNaN(new Date(photo.date).getTime())) {
                 year = new Date(photo.date).getFullYear().toString();
-            } else {
+            } else if (photo.key) {
                 // Фоллбэк: парсим из key (177978825761_IMG_20250306_... → 2025)
                 const match = photo.key.match(/(\d{4})(\d{2})(\d{2})/);
                 if (match) {
                     year = match[1];
                 } else {
-                    year = '2025'; // На крайний случай
+                    year = 'Неизвестно'; // На крайний случай
                 }
+            } else {
+                year = 'Неизвестно'; // Если вообще ничего нет
             }
             
             // Если год сменился — добавляем заголовок
