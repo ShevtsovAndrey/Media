@@ -28,12 +28,7 @@ body { background: #0a0a0a; font-family: system-ui, -apple-system, sans-serif; o
     display: flex; align-items: flex-start; justify-content: flex-start; padding: 12px;
     pointer-events: none;
 }
-
-.photo-card:hover .delete-overlay { 
-    opacity: 1; 
-    pointer-events: auto; 
-    z-index: 2; /* Добавь это */
-}
+.photo-card:hover .delete-overlay { opacity: 1; pointer-events: auto; }
 
 .delete-btn {
     width: 34px; height: 34px; background: rgba(255,255,255,0.95); color: #d32f2f;

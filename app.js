@@ -172,13 +172,11 @@ function renderCard(photo, index) {
         openLightbox(imgUrl);
     });
 
-    card.appendChild(img);
-
     card.innerHTML = `
         ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
     `;
     
-
+    card.appendChild(img);
 
     if (isAdmin) {
         card.querySelector('.delete-btn').addEventListener('click', (e) => {
