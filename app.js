@@ -76,13 +76,6 @@ async function uploadFiles(files) {
     if (btn) { btn.textContent = originalText; btn.disabled = false; }
 }
 
-
-
-
-
-
-
-
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
@@ -233,6 +226,52 @@ function renderCard(photo, index) {
     document.getElementById('gallery').appendChild(card);
 }
 
+
+// === DRAG & DROP (исправленный) ===
+if (isAdmin) {
+    const dragOverlay = document.getElementById('dragOverlay');
+    
+    if (dragOverlay) {
+        let dragCounter = 0;
+
+        // Критически важно: preventDefault на dragover, иначе drop не сработает
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+
+        document.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter++;
+            dragOverlay.classList.add('active');
+        }, false);
+
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter--;
+            // Скрываем оверлей только когда счётчик достиг 0
+            if (dragCounter === 0) {
+                dragOverlay.classList.remove('active');
+            }
+        }, false);
+
+        document.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter = 0;
+            dragOverlay.classList.remove('active');
+            
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length > 0) {
+                console.log('📥 Drop: файлов', files.length);
+                await uploadFiles(files);
+            }
+        }, false);
+    }
+}
+
 // Кнопка "+"
 document.getElementById('addBtn').addEventListener('click', () => {
     document.getElementById('fileInput').click();
@@ -315,7 +354,7 @@ async function syncJSON(changes, action, retries = 2) {
         throw new Error(errData.message || `GitHub API error ${putRes.status}`);
     }
 }
-// === ПОЛНОЭКРАННЫЙ ПРОСМОТР (рабочая версия для iOS + Desktop) ===
+// === ПОЛНОЭКРАННЫЙ ПРОСМОТР ЛАЙТБОКС (рабочая версия для iOS + Desktop) ===
 function openLightbox(imgUrl) {
     // Проверяем, есть ли уже лайтбокс
     let lb = document.getElementById('lightbox');
@@ -375,43 +414,6 @@ function openLightbox(imgUrl) {
 }
 
 window.openLightbox = openLightbox;
-
-
-
-// === DRAG & DROP (исправленный) ===
-if (isAdmin) {
-    const dragOverlay = document.getElementById('dragOverlay');
-    
-    // Предотвращаем стандартное поведение для ВСЕХ событий drag
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        document.body.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        }, false);
-    });
-
-    // Показываем оверлей
-    document.body.addEventListener('dragenter', () => {
-        if (dragOverlay) dragOverlay.classList.add('active');
-    }, false);
-
-    document.body.addEventListener('dragleave', (e) => {
-        // Проверяем, что ушли за пределы окна
-        if (e.clientX === 0 && e.clientY === 0) {
-            if (dragOverlay) dragOverlay.classList.remove('active');
-        }
-    }, false);
-
-    // Обработка drop
-    document.body.addEventListener('drop', async (e) => {
-        if (dragOverlay) dragOverlay.classList.remove('active');
-        
-        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-        if (files.length > 0) {
-            await uploadFiles(files);
-        }
-    }, false);
-}
 
 // Старт
 loadGallery();
