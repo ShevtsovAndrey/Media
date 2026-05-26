@@ -445,15 +445,17 @@ const photoMetaCache = JSON.parse(localStorage.getItem('photoMetaCache') || '{}'
 // Обновляем иконку кнопки
 function updateSortIcon() {
     if (!sortBtn) return;
-    const icons = { default: '🔄', date: '📅', color: '🎨' };
+    const icons = { date: 'ВРЕМЯ', color: 'ЦВЕТ' };
     sortBtn.textContent = icons[sortMode];
+    
 }
+sortMode = 'date'; // Стартовый режим
 updateSortIcon();
 
 // Переключение режима
 if (sortBtn) {
     sortBtn.addEventListener('click', async () => {
-        const modes = ['default', 'date', 'color'];
+        const modes = ['date', 'color'];
         const idx = modes.indexOf(sortMode);
         sortMode = modes[(idx + 1) % modes.length];
         localStorage.setItem('gallerySortMode', sortMode);
@@ -527,7 +529,7 @@ async function getPhotoHue(key, imgUrl) {
     });
 }
 
-// === СОРТИРОВКА (без парсера, только EXIF даты) ===
+// === СОРТИРОВКА (2 режима: дата и цвет) ===
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Сортировка...</div>';
@@ -548,11 +550,14 @@ async function renderSortedGallery(photosSource) {
         return !p.date || isNaN(new Date(p.date).getTime());
     });
 
-    // === СОРТИРОВКА фото с датами ===
+    // === СОРТИРОВКА ===
     if (sortMode === 'date') {
+        // Сортируем фото с датой: новые → старые
         photosWithDate.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    } else if (sortMode === 'color') {
-        const withHue = await Promise.all(photosWithDate.map(async p => {
+    } 
+    else if (sortMode === 'color') {
+        // Сортируем ВСЕ фото по цвету (HUE)
+        const allWithHue = await Promise.all(photos.map(async p => {
             const cacheKey = `hue_${p.key}`;
             let hue = localStorage.getItem(cacheKey);
             if (hue === null) {
@@ -562,15 +567,26 @@ async function renderSortedGallery(photosSource) {
             }
             return { ...p, hue: parseInt(hue) };
         }));
-        withHue.sort((a, b) => ((a.hue + 330) % 360) - ((b.hue + 330) % 360));
-        photosWithDate.splice(0, photosWithDate.length, ...withHue);
+        
+        // Сортировка по спектру радуги: красный(0°) → фиолетовый(330°)
+        allWithHue.sort((a, b) => ((a.hue + 330) % 360) - ((b.hue + 330) % 360));
+        
+        // Рендерим ВСЕ фото (без заголовков!)
+        gallery.innerHTML = '';
+        allWithHue.forEach(photo => {
+            const isNoDate = !photo.date || isNaN(new Date(photo.date).getTime());
+            renderCard(photo, -1, isNoDate);
+        });
+        
+        console.log(`✅ Сортировка по цвету: ${allWithHue.length} фото`);
+        return; // Выходим, дальше не идём
     }
 
-    // === РЕНДЕР ===
+    // === РЕНДЕР (только для режима ДАТЫ) ===
     gallery.innerHTML = '';
     
-    // 1. Сначала "Неизвестно" (ТОЛЬКО АДМИНУ)
-    if (isAdmin && photosWithoutDate.length > 0) {
+    // 1. Сначала "Неизвестно" (видна ВСЕМ)
+    if (photosWithoutDate.length > 0) {
         const unknownHeader = document.createElement('div');
         unknownHeader.className = 'year-header';
         unknownHeader.textContent = '📁 Неизвестно';
@@ -586,16 +602,14 @@ async function renderSortedGallery(photosSource) {
         let lastYear = null;
         
         photosWithDate.forEach(photo => {
-            if (sortMode === 'date') {
-                const year = new Date(photo.date).getFullYear().toString();
-                
-                if (year !== lastYear) {
-                    const header = document.createElement('div');
-                    header.className = 'year-header';
-                    header.textContent = year;
-                    gallery.appendChild(header);
-                    lastYear = year;
-                }
+            const year = new Date(photo.date).getFullYear().toString();
+            
+            if (year !== lastYear) {
+                const header = document.createElement('div');
+                header.className = 'year-header';
+                header.textContent = year;
+                gallery.appendChild(header);
+                lastYear = year;
             }
             
             renderCard(photo, -1, false);
