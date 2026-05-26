@@ -15,12 +15,20 @@ body {
 }
 
 .photo-card {
-    position: relative; flex: 0 1 auto; max-width: 48%; min-width: 280px;
-    background: #111; overflow: hidden; border-radius: 6px;
+    position: relative; 
+    flex: 0 1 auto; 
+    max-width: 50%; 
+    min-width: 280px;
+    background: #111; 
+    overflow: hidden; 
+    border-radius: 2px;
 }
 
 .photo-card img {
-    display: block; width: 100%; height: auto; max-height: 60vh;
+    display: block; 
+    width: 100%; 
+    height: auto; 
+    /*max-height: 60vh;*/
     object-fit: contain; transition: transform 0.3s ease;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -53,8 +61,10 @@ body {
 .delete-btn {
     width: 24px; 
     height: 24px; 
-    background: rgba(255,255,255,0.95); 
-    color: #d32f2f;
+    background: rgba(255,255,255,0.2); 
+    color: #ffffff;
+        backdrop-filter: blur(12px); /* размытие фона под кнопкой */
+    -webkit-backdrop-filter: blur(12px); /* для Safari/iOS */
     border: none; 
     border-radius: 50%; 
     font-size: 16px; 
