@@ -231,11 +231,48 @@ document.getElementById('addBtn').addEventListener('click', () => {
     document.getElementById('fileInput').click();
 });
 
+//ДРАГДРОП
+if (isAdmin) {
+    const dragOverlay = document.getElementById('dragOverlay');
+    
+    if (dragOverlay) {
+        // Когда файл входит в окно
+        window.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragOverlay.classList.add('active');
+            console.log('📥 dragenter - показываю оверлей');
+        }, false);
+
+        // Когда файл двигается над окном
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            // Ничего не делаем, просто блокируем стандартное поведение
+        }, false);
+
+        // Когда файл уходит из окна
+        window.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragOverlay.classList.remove('active');
+            console.log('📤 dragleave - скрываю оверлей');
+        }, false);
+
+        // Когда файл бросают
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragOverlay.classList.remove('active');
+            console.log('✋ drop - файл брошен');
+            console.log('Файлов:', e.dataTransfer.files.length);
+        }, false);
+    } else {
+        console.error('❌ Элемент #dragOverlay не найден!');
+    }
+}
+
 // Загрузка файлов (последовательно, с очередью)
 document.getElementById('fileInput').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    //await uploadFiles(files); // ← Используем общую функцию
+    await uploadFiles(files); // ← Используем общую функцию
     e.target.value = '';
 });
 
