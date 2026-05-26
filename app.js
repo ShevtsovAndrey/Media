@@ -36,12 +36,11 @@ function queueSyncJSON(changes, action) {
 const isAdmin = !!localStorage.getItem('github_token');
 if (isAdmin) document.getElementById('addBtn').style.display = 'flex';
 
-
-
-
-
-
 async function uploadFiles(files) {
+    console.log(' Drag&Drop: получены файлы', files);
+    console.log('🔧 s3:', typeof s3);
+    console.log('🔧 syncJSON:', typeof syncJSON);
+    
     if (!files || files.length === 0) return;
 
     const btn = document.getElementById('addBtn');
