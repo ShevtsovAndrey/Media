@@ -145,7 +145,7 @@ function renderCard(photo, index) {
     let touchStartX = 0;
     let touchStartY = 0;
 
-    // 1. Запоминаем где коснулись
+    // 1. Запоминаем где коснулись (НЕ открываем лайтбокс сразу!)
     img.addEventListener('touchstart', (e) => {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
@@ -155,11 +155,14 @@ function renderCard(photo, index) {
     img.addEventListener('touchend', (e) => {
         const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
         const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+
+        // Если палец почти не двигался — открываем лайтбокс
         if (deltaX < 15 && deltaY < 15) {
             e.preventDefault();
             e.stopPropagation();
             openLightbox(imgUrl);
         }
+        // Если двигался — это скролл, ничего не делаем
     }, { passive: false });
 
     // 3. Для компьютера — обычный клик
@@ -169,28 +172,31 @@ function renderCard(photo, index) {
         openLightbox(imgUrl);
     });
 
-    // Сначала картинка
+    card.innerHTML = `
+        ${isAdmin ? `<div class="delete-overlay"><button class="delete-btn" title="Удалить">&minus;</button></div>` : ''}
+    `;
+    
     card.appendChild(img);
 
-    // Потом overlay (чтобы был поверх)
     if (isAdmin) {
-        const overlay = document.createElement('div');
-        overlay.className = 'delete-overlay';
-        overlay.innerHTML = `<button class="delete-btn" title="Удалить">&minus;</button>`;
-        
-        overlay.querySelector('.delete-btn').addEventListener('click', (e) => {
+        card.querySelector('.delete-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             deletePhoto(photo.key, photo.title, card);
         });
-        
-        card.appendChild(overlay);
     }
-
     document.getElementById('gallery').appendChild(card);
 }
 
-// === ВЫНЕСЕННАЯ ЛОГИКА ЗАГРУЗКИ (для input + drag&drop) ===
-async function uploadFiles(files) {
+// Кнопка "+"
+document.getElementById('addBtn').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+});
+
+// Загрузка файлов (последовательно, с очередью)
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
     const btn = document.getElementById('addBtn');
     const originalText = btn.textContent;
     btn.textContent = '⏳';
@@ -201,7 +207,7 @@ async function uploadFiles(files) {
             const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
             const title = file.name.split('.')[0];
             
-            // Загрузка в Яндекс
+            // 1. Загрузка в Яндекс
             await new Promise((resolve, reject) => {
                 s3.upload({
                     Bucket: YANDEX_CONFIG.bucket,
@@ -213,11 +219,11 @@ async function uploadFiles(files) {
 
             console.log(`✅ ${file.name} → Яндекс`);
 
-            // Ждём сохранения в JSON
+            // 2. ЖДЁМ сохранения в JSON перед успехом
             await syncJSON([{ title, key }], 'add');
             console.log(`✅ ${key} → gallery.json`);
 
-            // Показываем
+            // 3. Только после успеха — показываем
             renderCard({ title, key }, -1);
 
         } catch (err) {
@@ -228,51 +234,8 @@ async function uploadFiles(files) {
 
     btn.textContent = originalText;
     btn.disabled = false;
-}
-
-// Обработчик кнопки "+"
-document.getElementById('fileInput').addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    await uploadFiles(files);
     e.target.value = '';
 });
-
-// === DRAG & DROP НА ВЕСЬ ЭКРАН (только для админа) ===
-if (isAdmin) {
-    const dragOverlay = document.getElementById('dragOverlay');
-    let dragCounter = 0;
-
-    document.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        dragCounter++;
-        if (dragOverlay) dragOverlay.classList.add('active');
-    });
-
-    document.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dragCounter--;
-        if (dragCounter === 0 && dragOverlay) {
-            dragOverlay.classList.remove('active');
-        }
-    });
-
-    document.addEventListener('dragover', (e) => {
-        e.preventDefault();
-    });
-
-    document.addEventListener('drop', async (e) => {
-        e.preventDefault();
-        dragCounter = 0;
-        if (dragOverlay) dragOverlay.classList.remove('active');
-
-        // Берём только изображения
-        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-        if (files.length > 0) {
-            await uploadFiles(files);
-        }
-    });
-}
 
 // Удаление фото
 async function deletePhoto(key, title, cardElement) {
@@ -282,7 +245,7 @@ async function deletePhoto(key, title, cardElement) {
     cardElement.style.pointerEvents = 'none';
 
     try {
-        // Удаление из Яндекса
+        // 1. Удаление из Яндекса
         await new Promise((resolve, reject) => {
             s3.deleteObject({
                 Bucket: YANDEX_CONFIG.bucket,
@@ -292,10 +255,10 @@ async function deletePhoto(key, title, cardElement) {
 
         console.log(`✅ ${key} удалён из Яндекса`);
 
-        // Удаление из JSON
+        // 2. Удаление из JSON
         await queueSyncJSON([{ key }], 'delete');
 
-        // Удаление из DOM
+        // 3. Удаление из DOM
         cardElement.remove();
 
     } catch (err) {
@@ -343,27 +306,32 @@ async function syncJSON(changes, action, retries = 2) {
         throw new Error(errData.message || `GitHub API error ${putRes.status}`);
     }
 }
-
-// === ПОЛНОЭКРАННЫЙ ПРОСМОТР ===
+// === ПОЛНОЭКРАННЫЙ ПРОСМОТР (рабочая версия для iOS + Desktop) ===
 function openLightbox(imgUrl) {
+    // Проверяем, есть ли уже лайтбокс
     let lb = document.getElementById('lightbox');
     if (lb) {
+        // Если есть — просто меняем фото
         const img = lb.querySelector('img');
         img.style.opacity = '0';
         setTimeout(() => {
             img.src = imgUrl;
-            img.onload = () => { img.style.opacity = '1'; };
+            img.onload = () => {
+                img.style.opacity = '1';
+            };
         }, 200);
         lb.classList.add('active');
         return;
     }
     
+    // Создаём новый
     lb = document.createElement('div');
     lb.id = 'lightbox';
     lb.className = 'lightbox';
     lb.innerHTML = '<img src="" alt="">';
     document.body.appendChild(lb);
     
+    // Закрытие
     const close = () => {
         lb.classList.remove('active');
         setTimeout(() => lb.remove(), 200);
@@ -371,6 +339,7 @@ function openLightbox(imgUrl) {
     
     lb.addEventListener('click', close);
     
+    // Esc
     document.addEventListener('keydown', function onEsc(e) {
         if (e.key === 'Escape' && document.getElementById('lightbox')) {
             close();
@@ -378,9 +347,11 @@ function openLightbox(imgUrl) {
         }
     });
     
+    // Показ
     const img = lb.querySelector('img');
     img.src = imgUrl;
     
+    // Форсируем reflow
     requestAnimationFrame(() => {
         if (img.complete) {
             img.style.opacity = '1';
@@ -395,6 +366,5 @@ function openLightbox(imgUrl) {
 }
 
 window.openLightbox = openLightbox;
-
 // Старт
 loadGallery();
