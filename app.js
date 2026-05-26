@@ -167,13 +167,12 @@ async function loadGallery() {
         }
 
         // 5. Рендерим галерею из синхронизированного списка
-        gallery.innerHTML = '';
-        //currentPhotos.forEach((photo, i) => renderCard(photo, i));
+gallery.innerHTML = '';
 
 if (sortMode !== 'default') {
-    renderSortedGallery();
+    renderSortedGallery(currentPhotos); // ← Передаём массив!
 } else {
-    currentPhotos.forEach((photo, i) => renderCard(photo, i));
+    currentPhotos.forEach(photo => renderCard(photo, -1));
 }
 
 
@@ -430,13 +429,27 @@ updateSortIcon();
 
 // Переключение режима
 if (sortBtn) {
-    sortBtn.addEventListener('click', () => {
+    sortBtn.addEventListener('click', async () => {
         const modes = ['default', 'date', 'color'];
         const idx = modes.indexOf(sortMode);
         sortMode = modes[(idx + 1) % modes.length];
         localStorage.setItem('gallerySortMode', sortMode);
         updateSortIcon();
-        renderSortedGallery();
+        
+        // Получаем актуальные фото из JSON (быстро, из кэша браузера)
+        try {
+            const token = localStorage.getItem('github_token');
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`, {
+                headers: { 'Authorization': `token ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const photos = JSON.parse(atob(data.content));
+                renderSortedGallery(photos); // ← Передаём массив
+            }
+        } catch(e) {
+            console.error('Ошибка при сортировке:', e);
+        }
     });
 }
 
@@ -492,57 +505,62 @@ async function getPhotoHue(key, imgUrl) {
 }
 
 // Основная функция перерисовки с сортировкой
-async function renderSortedGallery() {
+// === СОРТИРОВКА (исправленная: без повторных запросов, с EXIF-датами) ===
+async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Сортировка...</div>';
+    
+    // Даём браузеру отрисовать лоадер
+    await new Promise(r => setTimeout(r, 30));
 
-    // Загружаем фото из JSON
-    let photos = [];
-    try {
-        const token = localStorage.getItem('github_token');
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`, {
-            headers: { 'Authorization': `token ${token}` }
-        });
-        
-        if (res.ok) {
-            const data = await res.json();
-            photos = JSON.parse(atob(data.content));
-        }
-    } catch(e) { 
-        console.error('Ошибка загрузки JSON:', e); 
-    }
-
+    // Берём фото из переданного массива (не делаем новый fetch!)
+    let photos = Array.isArray(photosSource) ? [...photosSource] : [];
     if (photos.length === 0) {
         gallery.innerHTML = '<div class="loading">Нет фото</div>';
         return;
     }
 
-    // Применяем сортировку
+    // === СОРТИРОВКА ПО ДАТЕ (используем photo.date из JSON — это EXIF) ===
     if (sortMode === 'date') {
-        photos.sort((a, b) => getPhotoDate(b.key) - getPhotoDate(a.key));
-    } else if (sortMode === 'color') {
-        // Асинхронно получаем hue для всех фото
-        const withHue = await Promise.all(photos.map(async p => ({
-            ...p,
-            hue: await getPhotoHue(p.key, `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`)
-        })));
-        // Сортировка по спектру: красный(0) -> желтый(60) -> зеленый(120) -> синий(240) -> фиолетовый
+        photos.sort((a, b) => {
+            const dateA = a.date || 0; // EXIF-дата, сохранённая при загрузке
+            const dateB = b.date || 0;
+            return dateB - dateA; // Новые → старые
+        });
+    }
+    
+    // === СОРТИРОВКА ПО ЦВЕТУ (ленивая, с кэшем) ===
+    else if (sortMode === 'color') {
+        // Сначала берём из кэша, если нет — анализируем (но не блокируем рендер)
+        const withHue = await Promise.all(photos.map(async p => {
+            const cacheKey = `hue_${p.key}`;
+            let hue = localStorage.getItem(cacheKey);
+            
+            if (hue === null) {
+                // Анализируем только если нет в кэше
+                const imgUrl = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`;
+                hue = await getPhotoHueSimple(imgUrl);
+                localStorage.setItem(cacheKey, hue);
+            }
+            return { ...p, hue: parseInt(hue) };
+        }));
+        
+        // Сортировка по спектру: красный(0°) → фиолетовый(330°)
         withHue.sort((a, b) => {
-            // Сдвиг для красоты: начинаем с красного
-            const shift = (h) => (h + 330) % 360;
+            const shift = (h) => (h + 330) % 360; // Сдвиг, чтобы начинать с красного
             return shift(a.hue) - shift(b.hue);
         });
         photos = withHue;
     }
 
-    // Рендер
+    // === РЕНДЕР ===
     gallery.innerHTML = '';
     let lastYear = null;
 
-    photos.forEach((photo, i) => {
-        // Заголовок года для режима даты
-        if (sortMode === 'date') {
-            const year = getPhotoDate(photo.key).getFullYear().toString();
+    photos.forEach(photo => {
+        // Заголовки годов только для режима даты
+        if (sortMode === 'date' && photo.date) {
+            const year = new Date(photo.date).getFullYear().toString();
             if (year !== lastYear) {
                 const header = document.createElement('div');
                 header.className = 'year-header';
@@ -551,7 +569,37 @@ async function renderSortedGallery() {
                 lastYear = year;
             }
         }
-        renderCard(photo, i);
+        renderCard(photo, -1);
+    });
+}
+
+// === ЛЁГКИЙ АНАЛИЗ ЦВЕТА (10×10 пикселей, ~20мс на фото) ===
+function getPhotoHueSimple(imgUrl) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+            const c = document.createElement('canvas');
+            c.width = 10; c.height = 10;
+            const ctx = c.getContext('2d');
+            ctx.drawImage(img, 0, 0, 10, 10);
+            const d = ctx.getImageData(0, 0, 10, 10).data;
+            
+            let r=0, g=0, b=0, n=0;
+            for(let i=0; i<d.length; i+=4) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; }
+            r/=n; g/=n; b/=n;
+            
+            const max=Math.max(r,g,b), min=Math.min(r,g,b), delta=max-min;
+            let h=0;
+            if(delta!==0){
+                if(max===r) h=((g-b)/delta+(g<b?6:0))/6;
+                else if(max===g) h=((b-r)/delta+2)/6;
+                else h=((r-g)/delta+4)/6;
+            }
+            resolve(Math.round(h*360));
+        };
+        img.onerror = () => resolve(0);
+        img.src = imgUrl;
     });
 }
 
