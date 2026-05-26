@@ -560,30 +560,30 @@ async function renderSortedGallery(photosSource) {
 
     photos.forEach(photo => {
         // Заголовки годов ТОЛЬКО для режима даты
-        if (sortMode === 'date') {
-            // Проверяем, что дата есть и валидна
+          if (sortMode === 'date') {
+            // === Пробуем взять год из photo.date, иначе парсим из ключа ===
+            let year = null;
+            
             if (photo.date && !isNaN(new Date(photo.date).getTime())) {
-                const year = new Date(photo.date).getFullYear().toString();
-                
-                // Если год сменился — добавляем заголовок
-                if (year !== lastYear) {
-                    console.log(`📅 Добавляю заголовок: ${year}`);
-                    const header = document.createElement('div');
-                    header.className = 'year-header';
-                    header.textContent = year;
-                    gallery.appendChild(header);
-                    lastYear = year;
-                }
+                year = new Date(photo.date).getFullYear().toString();
             } else {
-                // Если даты нет — фото попадает в группу "Без даты"
-                if (lastYear !== 'unknown') {
-                    const header = document.createElement('div');
-                    header.className = 'year-header';
-                    header.textContent = '📁';
-                    header.style.fontSize = '60px';
-                    gallery.appendChild(header);
-                    lastYear = 'unknown';
+                // Фоллбэк: парсим из key (177978825761_IMG_20250306_... → 2025)
+                const match = photo.key.match(/(\d{4})(\d{2})(\d{2})/);
+                if (match) {
+                    year = match[1];
+                } else {
+                    year = '2025'; // На крайний случай
                 }
+            }
+            
+            // Если год сменился — добавляем заголовок
+            if (year !== lastYear) {
+                console.log(`📅 Добавляю заголовок: ${year}`);
+                const header = document.createElement('div');
+                header.className = 'year-header';
+                header.textContent = year;
+                gallery.appendChild(header);
+                lastYear = year;
             }
         }
         
