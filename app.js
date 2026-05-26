@@ -226,52 +226,6 @@ function renderCard(photo, index) {
     document.getElementById('gallery').appendChild(card);
 }
 
-
-// === DRAG & DROP (исправленный) ===
-if (isAdmin) {
-    const dragOverlay = document.getElementById('dragOverlay');
-    
-    if (dragOverlay) {
-        let dragCounter = 0;
-
-        // Критически важно: preventDefault на dragover, иначе drop не сработает
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        }, false);
-
-        document.addEventListener('dragenter', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dragCounter++;
-            dragOverlay.classList.add('active');
-        }, false);
-
-        document.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dragCounter--;
-            // Скрываем оверлей только когда счётчик достиг 0
-            if (dragCounter === 0) {
-                dragOverlay.classList.remove('active');
-            }
-        }, false);
-
-        document.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            dragCounter = 0;
-            dragOverlay.classList.remove('active');
-            
-            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-            if (files.length > 0) {
-                console.log('📥 Drop: файлов', files.length);
-                await uploadFiles(files);
-            }
-        }, false);
-    }
-}
-
 // Кнопка "+"
 document.getElementById('addBtn').addEventListener('click', () => {
     document.getElementById('fileInput').click();
@@ -281,7 +235,7 @@ document.getElementById('addBtn').addEventListener('click', () => {
 document.getElementById('fileInput').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    await uploadFiles(files); // ← Используем общую функцию
+    //await uploadFiles(files); // ← Используем общую функцию
     e.target.value = '';
 });
 
