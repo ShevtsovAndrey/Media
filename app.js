@@ -6,7 +6,6 @@ const YANDEX_CONFIG = {
     accessKeyId: 'YCAJEdsduslR2tqI4X7bloeTg',        // ← ВСТАВЬ СЮДА
     secretAccessKey: 'YCNSa7x9zzWqAGzAI8Iyvv6j3475TIpIy7PGqEs5'     // ← ВСТАВЬ СЮДА
 };
-
 const GITHUB_CONFIG = {
     repo: 'ShevtsovAndrey/Media',
     branch: 'main',
@@ -36,6 +35,54 @@ function queueSyncJSON(changes, action) {
 // Проверка админа
 const isAdmin = !!localStorage.getItem('github_token');
 if (isAdmin) document.getElementById('addBtn').style.display = 'flex';
+
+
+
+
+
+
+async function uploadFiles(files) {
+    if (!files || files.length === 0) return;
+
+    const btn = document.getElementById('addBtn');
+    const originalText = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+    for (const file of files) {
+        try {
+            const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
+            const title = file.name.split('.')[0];
+            
+            // Загрузка в Яндекс (твоя рабочая логика)
+            await new Promise((resolve, reject) => {
+                s3.upload({
+                    Bucket: YANDEX_CONFIG.bucket,
+                    Key: key,
+                    Body: file,
+                    ContentType: file.type
+                }, (err, data) => err ? reject(err) : resolve(data));
+            });
+
+            console.log(`✅ ${file.name} → Яндекс`);
+            await syncJSON([{ title, key }], 'add');
+            console.log(`✅ ${key} → gallery.json`);
+            renderCard({ title, key }, -1);
+
+        } catch (err) {
+            console.error(`❌ Ошибка ${file.name}:`, err);
+            alert(`Не удалось сохранить ${file.name}.`);
+        }
+    }
+
+    if (btn) { btn.textContent = originalText; btn.disabled = false; }
+}
+
+
+
+
+
+
+
 
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
 async function loadGallery() {
@@ -196,44 +243,7 @@ document.getElementById('addBtn').addEventListener('click', () => {
 document.getElementById('fileInput').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-
-    const btn = document.getElementById('addBtn');
-    const originalText = btn.textContent;
-    btn.textContent = '⏳';
-    btn.disabled = true;
-
-    for (const file of files) {
-        try {
-            const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
-            const title = file.name.split('.')[0];
-            
-            // 1. Загрузка в Яндекс
-            await new Promise((resolve, reject) => {
-                s3.upload({
-                    Bucket: YANDEX_CONFIG.bucket,
-                    Key: key,
-                    Body: file,
-                    ContentType: file.type
-                }, (err, data) => err ? reject(err) : resolve(data));
-            });
-
-            console.log(`✅ ${file.name} → Яндекс`);
-
-            // 2. ЖДЁМ сохранения в JSON перед успехом
-            await syncJSON([{ title, key }], 'add');
-            console.log(`✅ ${key} → gallery.json`);
-
-            // 3. Только после успеха — показываем
-            renderCard({ title, key }, -1);
-
-        } catch (err) {
-            console.error(`❌ Ошибка ${file.name}:`, err);
-            alert(`Не удалось сохранить ${file.name}.`);
-        }
-    }
-
-    btn.textContent = originalText;
-    btn.disabled = false;
+    await uploadFiles(files); // ← Используем общую функцию
     e.target.value = '';
 });
 
@@ -369,11 +379,12 @@ window.openLightbox = openLightbox;
 
 
 
+// === DRAG & DROP (исправленный) ===
 if (isAdmin) {
-    document.addEventListener('DOMContentLoaded', () => {
-        const dragOverlay = document.getElementById('dragOverlay');
-        if (!dragOverlay) return; // Если нет в HTML — просто не включается
-
+    const dragOverlay = document.getElementById('dragOverlay');
+    if (!dragOverlay) {
+        console.warn('⚠️ #dragOverlay не найден в HTML');
+    } else {
         let dragCounter = 0;
 
         document.addEventListener('dragenter', (e) => {
@@ -398,43 +409,12 @@ if (isAdmin) {
             dragOverlay.classList.remove('active');
 
             const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-            if (files.length === 0) return;
-
-            // Используем ТВОЮ существующую логику загрузки
-            const btn = document.getElementById('addBtn');
-            const originalText = btn.textContent;
-            btn.textContent = '⏳';
-            btn.disabled = true;
-
-            for (const file of files) {
-                try {
-                    const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
-                    const title = file.name.split('.')[0];
-                    
-                    await new Promise((resolve, reject) => {
-                        s3.upload({
-                            Bucket: YANDEX_CONFIG.bucket,
-                            Key: key,
-                            Body: file,
-                            ContentType: file.type
-                        }, (err, data) => err ? reject(err) : resolve(data));
-                    });
-
-                    await syncJSON([{ title, key }], 'add');
-                    renderCard({ title, key }, -1);
-                } catch (err) {
-                    console.error(err);
-                    alert(`Ошибка ${file.name}`);
-                }
+            if (files.length > 0) {
+                await uploadFiles(files); // ← Та же функция, что и для кнопки +
             }
-
-            btn.textContent = originalText;
-            btn.disabled = false;
         });
-    });
+    }
 }
-
-
 
 // Старт
 loadGallery();
