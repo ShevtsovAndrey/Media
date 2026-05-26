@@ -22,6 +22,27 @@ AWS.config.update({
 });
 const s3 = new AWS.S3();
 
+//ФУНКЦИЯ ЧТЕНИЯ EXIF
+function getExifDate(file) {
+    return new Promise((resolve) => {
+        // Если файл не JPEG, EXIF скорее всего нет → сразу fallback
+        if (!file.type.includes('jpeg') && !file.type.includes('jpg')) {
+            return resolve(file.lastModified);
+        }
+
+        EXIF.getData(file, function () {
+            const dateTaken = EXIF.getTag(this, 'DateTimeOriginal') || EXIF.getTag(this, 'CreateDate');
+            if (dateTaken) {
+                // EXIF формат: "YYYY:MM:DD HH:MM:SS" → превращаем в валидный Date
+                const clean = dateTaken.replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1-$2-$3');
+                resolve(new Date(clean).getTime());
+            } else {
+                resolve(file.lastModified); // Fallback на дату изменения файла
+            }
+        });
+    });
+}
+
 // Очередь для синхронизации JSON (предотвращает гонку состояний)
 let jsonSyncQueue = Promise.resolve();
 function queueSyncJSON(changes, action) {
@@ -47,12 +68,20 @@ async function uploadFiles(files) {
     const originalText = btn ? btn.textContent : '';
     if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
 
-    for (const file of files) {
+ for (const file of files) {
         try {
             const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
             const title = file.name.split('.')[0];
             
-            // Загрузка в Яндекс (твоя рабочая логика)
+            // 1. Считываем EXIF дату
+            console.log(`📖 Читаю метаданные ${file.name}...`);
+            const photoDate = await getExifDate(file);
+            
+            // 2. Кэшируем дату в браузере (чтобы сортировка потом была мгновенной)
+            localStorage.setItem(`exif_date_${key}`, photoDate);
+            console.log(`💾 Дата сохранена: ${new Date(photoDate).toLocaleDateString()}`);
+
+            // 3. Загрузка в Яндекс
             await new Promise((resolve, reject) => {
                 s3.upload({
                     Bucket: YANDEX_CONFIG.bucket,
@@ -63,8 +92,12 @@ async function uploadFiles(files) {
             });
 
             console.log(`✅ ${file.name} → Яндекс`);
-            await syncJSON([{ title, key }], 'add');
+
+            // 4. Сохраняем в JSON вместе с датой
+            await syncJSON([{ title, key, date: photoDate }], 'add');
             console.log(`✅ ${key} → gallery.json`);
+
+            // 5. Показываем
             renderCard({ title, key }, -1);
 
         } catch (err) {
@@ -79,7 +112,7 @@ async function uploadFiles(files) {
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
-    gallery.innerHTML = '<div class="loading">Загрузка и синхронизация...</div>';
+    gallery.innerHTML = '<div class="loading">Загрузка</div>';
 
     try {
         const token = localStorage.getItem('github_token');
