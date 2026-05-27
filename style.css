@@ -339,3 +339,45 @@ filter: invert(1);
         border-left-color: #cc0000;
     }
 }
+
+
+#gallery.date-mode {
+    scroll-snap-type: y proximity; /* Плавное прилипание к блокам */
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    padding: 0;
+}
+
+.year-section {
+    scroll-snap-align: start; /* Точка остановки скролла */
+    min-height: 85vh; /* Год занимает почти весь экран */
+    padding: 40px 12px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Мозаика (CSS Columns — надёжнее всего для разной высоты фото) */
+.mosaic-grid {
+    column-count: 3;
+    column-gap: 12px;
+    flex: 1;
+}
+
+.mosaic-grid .photo-card {
+    break-inside: avoid; /* Запрещает разрывать карточку между колонками */
+    margin-bottom: 12px;
+    width: 100%;
+    display: inline-block; /* Фикс бага с отступами в column-layout */
+}
+
+/* Адаптивность мозаики */
+@media (max-width: 1024px) { .mosaic-grid { column-count: 2; } }
+@media (max-width: 600px)  { .mosaic-grid { column-count: 1; } }
+
+/* Скрываем обычный режим галереи, когда включена дата */
+#gallery:not(.date-mode) .year-section { display: none; }
+#gallery.date-mode .photo-card:not(.mosaic-grid .photo-card) { display: none; }

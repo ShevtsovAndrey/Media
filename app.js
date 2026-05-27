@@ -253,7 +253,7 @@ async function loadGallery() {
     }
 }
 // Рендер карточки
-function renderCard(photo, index, isNoDate = false) {
+function renderCard(photo, index, isNoDate = false, target = null) {
     const card = document.createElement('div');
     card.className = 'photo-card' + (isNoDate ? ' no-date' : '');
     card.dataset.key = photo.key;
@@ -336,7 +336,9 @@ function renderCard(photo, index, isNoDate = false) {
     }
     
     card.appendChild(img);
-    document.getElementById('gallery').appendChild(card);
+    // Если передан контейнер (для мозаики) → кидаем туда, иначе в gallery
+    (target || document.getElementById('gallery')).appendChild(card);
+    return card;
 }
 
 // Кнопка "+"
@@ -606,6 +608,8 @@ async function renderSortedGallery(photosSource) {
 
     // === РЕЖИМ ЦВЕТА ===
     if (sortMode === 'color') {
+        gallery.classList.remove('date-mode'); // Выключаем снаппинг
+gallery.innerHTML = '';
         const withHue = await Promise.all(photos.map(async p => {
             const cacheKey = `hue_${p.key}`;
             let hue = localStorage.getItem(cacheKey);
@@ -626,9 +630,54 @@ async function renderSortedGallery(photosSource) {
     }
 
     // === РЕЖИМ ДАТЫ (ЖЁСТКАЯ ПРОВЕРКА ТЕГОВ) ===
-    gallery.innerHTML = '';
+ gallery.innerHTML = '';
+    gallery.classList.add('date-mode'); // Включаем CSS-снаппинг
+
     const groups = {};
     const unknown = [];
+
+    // ... (твоя старая фильтрация photos.forEach(p => {...}) без изменений) ...
+
+    const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
+
+    // 1. Рендерим годы с мозаикой
+    sortedYears.forEach(year => {
+        const section = document.createElement('div');
+        section.className = 'year-section';
+        
+        const header = document.createElement('div');
+        header.className = 'year-header';
+        header.textContent = year;
+        section.appendChild(header);
+        
+        const grid = document.createElement('div');
+        grid.className = 'mosaic-grid';
+        
+        groups[year].forEach(photo => renderCard(photo, -1, false, grid));
+        
+        section.appendChild(grid);
+        gallery.appendChild(section);
+    });
+
+    // 2. Группа "-" (если есть)
+    if (unknown.length > 0) {
+        const section = document.createElement('div');
+        section.className = 'year-section';
+        
+        const header = document.createElement('div');
+        header.className = 'year-header';
+        header.textContent = '-';
+        section.appendChild(header);
+        
+        const grid = document.createElement('div');
+        grid.className = 'mosaic-grid';
+        unknown.forEach(photo => renderCard(photo, -1, true, grid));
+        
+        section.appendChild(grid);
+        gallery.appendChild(section);
+    } else {
+        console.log(`✅ Все фото отсортированы, "-" не показываю`);
+    }
 
     photos.forEach(p => {
         const y = p.tagYear;
@@ -668,15 +717,45 @@ async function renderSortedGallery(photosSource) {
     });
 
     // 2. Группа "-" ВНИЗУ (только если есть фото без тега)
+    const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
+
+    // 1. Рендерим годы с мозаикой
+    sortedYears.forEach(year => {
+        const section = document.createElement('div');
+        section.className = 'year-section';
+        
+        const header = document.createElement('div');
+        header.className = 'year-header';
+        header.textContent = year;
+        section.appendChild(header);
+        
+        const grid = document.createElement('div');
+        grid.className = 'mosaic-grid';
+        
+        groups[year].forEach(photo => renderCard(photo, -1, false, grid));
+        
+        section.appendChild(grid);
+        gallery.appendChild(section);
+    });
+
+    // 2. Группа "-" (если есть)
     if (unknown.length > 0) {
-        console.log(`📁 Показываю "-" (${unknown.length} фото без тега)`);
+        const section = document.createElement('div');
+        section.className = 'year-section';
+        
         const header = document.createElement('div');
         header.className = 'year-header';
         header.textContent = '-';
-        gallery.appendChild(header);
-        unknown.forEach(photo => renderCard(photo, -1, true));
+        section.appendChild(header);
+        
+        const grid = document.createElement('div');
+        grid.className = 'mosaic-grid';
+        unknown.forEach(photo => renderCard(photo, -1, true, grid));
+        
+        section.appendChild(grid);
+        gallery.appendChild(section);
     } else {
-        console.log(`✅ Все ${photos.length} фото имеют валидные теги, "-" не показываю`);
+        console.log(`✅ Все фото отсортированы, "-" не показываю`);
     }
 }
 
