@@ -291,7 +291,7 @@ function renderCard(photo, index, isNoDate = false) {
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.title = 'Удалить';
-        delBtn.innerHTML = '<svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        delBtn.innerHTML = '<img src="delete.png" alt="Удалить">';
         delBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             deletePhoto(photo.key, photo.title, card);
