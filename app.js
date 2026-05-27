@@ -111,7 +111,8 @@ if (btn) {
             console.log(`✅ ${file.name} → Яндекс`);
 
             // 4. Сохраняем в JSON вместе с датой
-            await syncJSON([{ title, key, date: photoDate }], 'add');
+            const year = photoDate ? new Date(photoDate).getFullYear() : null;
+await syncJSON([{ title, key, date: photoDate, tagYear: year }], 'add');
             console.log(`✅ ${key} → gallery.json`);
 
             // 5. Показываем
@@ -141,7 +142,6 @@ async function loadGallery() {
         // 1. Получаем текущий JSON с GitHub
         const jsonRes = await fetch(jsonUrl, { headers: { 'Authorization': `token ${token}` } });
         let currentPhotos = [];
-        
         let sha = null;
         
         if (jsonRes.ok) {
@@ -149,14 +149,6 @@ async function loadGallery() {
             currentPhotos = JSON.parse(atob(data.content));
             sha = data.sha;
         }
-        window.galleryPhotos = currentPhotos;
-
-               // === DEBUG: проверка дат ===
-            console.log('🔍 Проверка дат в фото:');
-            currentPhotos.slice(0, 5).forEach(p => {
-                console.log(`  ${p.key}: date=${p.date}, parsed=${p.date ? new Date(p.date).getFullYear() : 'нет'}`);
-            });
-            // === КОНЕЦ DEBUG ===
 
         // 2. Получаем список файлов из Яндекса
         const s3Files = await new Promise((resolve, reject) => {
@@ -170,23 +162,27 @@ async function loadGallery() {
         const jsonKeys = new Set(currentPhotos.map(p => p.key));
 
         // 3. Находим файлы в Яндексе, которых нет в JSON
-        const missingInJson = await Promise.all(
-            s3Files
-                .filter(f => !jsonKeys.has(f.Key))
-                .map(async f => {
-                    const key = f.Key;
-                    const title = key.split('/').pop().replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
-                    
-                    // Пробуем прочитать дату из имени файла
-                    let date = null;
-                    const match = key.match(/(\d{4})(\d{2})(\d{2})/);
-                    if (match) {
+        const missingInJson = s3Files
+            .filter(f => !jsonKeys.has(f.Key))
+            .map(f => {
+                const key = f.Key;
+                const title = key.split('/').pop().replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
+                
+                // Парсим дату из имени файла: 177978825761_IMG_20250306_... → 2025
+                let date = null;
+                let tagYear = null;
+                const match = key.match(/(\d{4})(\d{2})(\d{2})/);
+                if (match) {
+                    const year = parseInt(match[1]);
+                    // Проверяем, что год адекватный
+                    if (year >= 2000 && year <= 2100) {
                         date = new Date(`${match[1]}-${match[2]}-${match[3]}`).getTime();
+                        tagYear = year; // ← ВАЖНО: сохраняем год как тег
                     }
-                    
-                    return { title, key, date };
-                })
-        );
+                }
+                
+                return { title, key, date, tagYear }; // ← Добавили tagYear
+            });
 
         // 4. Если есть расхождения — молча исправляем JSON
         if (missingInJson.length > 0) {
@@ -206,15 +202,15 @@ async function loadGallery() {
             currentPhotos = updatedPhotos;
         }
 
-        // 5. Рендерим галерею из синхронизированного списка
-gallery.innerHTML = '';
-window.galleryPhotos = currentPhotos;
-if (sortMode !== 'default') {
-    renderSortedGallery(currentPhotos); // ← Передаём массив!
-} else {
-    currentPhotos.forEach(photo => renderCard(photo, -1));
-}
-
+        // 5. Сохраняем глобально и рендерим
+        window.galleryPhotos = currentPhotos;
+        gallery.innerHTML = '';
+        
+        if (sortMode !== 'default') {
+            renderSortedGallery(currentPhotos);
+        } else {
+            currentPhotos.forEach(photo => renderCard(photo, -1));
+        }
 
         if (currentPhotos.length === 0) {
             gallery.innerHTML = '<div class="loading">Нет фото. Нажми + чтобы добавить.</div>';
@@ -222,7 +218,7 @@ if (sortMode !== 'default') {
 
     } catch (err) {
         console.error('❌ Ошибка загрузки:', err);
-        // Фоллбэк: показываем хотя бы то, что есть в старом JSON
+        // Фоллбэк
         try {
             const token = localStorage.getItem('github_token');
             const fallbackRes = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`, {
@@ -233,8 +229,7 @@ if (sortMode !== 'default') {
                 const photos = JSON.parse(atob(data.content));
                 window.galleryPhotos = photos;
                 gallery.innerHTML = '';
-                photos.forEach((photo, i) => renderCard(photo, i));
-                
+                photos.forEach(photo => renderCard(photo, -1));
             } else {
                 gallery.innerHTML = '<div class="loading">Ошибка загрузки. Проверь интернет.</div>';
             }
@@ -581,73 +576,61 @@ async function renderSortedGallery(photosSource) {
         return;
     }
 
-    // === РЕЖИМ ЦВЕТА (без изменений) ===
+    // === РЕЖИМ ЦВЕТА ===
     if (sortMode === 'color') {
-        const allWithHue = await Promise.all(photos.map(async p => {
+        const withHue = await Promise.all(photos.map(async p => {
             const cacheKey = `hue_${p.key}`;
             let hue = localStorage.getItem(cacheKey);
             if (hue === null) {
-                const imgUrl = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`;
-                hue = await getPhotoHueSimple(imgUrl);
+                hue = await getPhotoHueSimple(`${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`);
                 localStorage.setItem(cacheKey, hue);
             }
             return { ...p, hue: parseInt(hue) };
         }));
-        
-        allWithHue.sort((a, b) => ((a.hue + 330) % 360) - ((b.hue + 330) % 360));
-        
+        withHue.sort((a, b) => ((a.hue + 330) % 360) - ((b.hue + 330) % 360));
         gallery.innerHTML = '';
-        allWithHue.forEach(photo => {
-            const isUnknown = !photo.tagYear || !/^\d{4}$/.test(String(photo.tagYear));
-            renderCard(photo, -1, isUnknown);
-        });
+        withHue.forEach(p => renderCard(p, -1, !p.tagYear || !/^\d{4}$/.test(String(p.tagYear))));
         return;
     }
 
     // === РЕЖИМ ДАТЫ (СТРОГО ПО ТЕГАМ) ===
     gallery.innerHTML = '';
-
     const groups = {};
-    const unknownPhotos = [];
+    const unknown = [];
 
     photos.forEach(p => {
-        const tag = p.tagYear;
-        // Проверяем: есть тег И ровно 4 цифры
-        if (tag !== undefined && tag !== null && /^\d{4}$/.test(String(tag))) {
-            const year = String(tag);
+        const y = p.tagYear;
+        if (y !== null && y !== undefined && /^\d{4}$/.test(String(y))) {
+            const year = String(y);
             if (!groups[year]) groups[year] = [];
             groups[year].push(p);
         } else {
-            unknownPhotos.push(p);
+            unknown.push(p);
         }
     });
 
-    // Сортируем годы по убыванию (2026 -> 2025 -> ...)
     const sortedYears = Object.keys(groups).sort((a, b) => b - a);
 
-    // 1. Рендерим группы с тегами
+    // 1. Группы с валидными тегами (от нового к старому)
     sortedYears.forEach(year => {
         const header = document.createElement('div');
         header.className = 'year-header';
         header.textContent = year;
         gallery.appendChild(header);
-
         groups[year].forEach(photo => renderCard(photo, -1, false));
     });
 
-    // 2. Рендерим блок "?" В САМОМ КОНЦЕ (только если есть фото без валидного тега)
-    if (unknownPhotos.length > 0) {
+    // 2. Группа "?" ВНИЗУ (только если есть фото без тега)
+    if (unknown.length > 0) {
         const header = document.createElement('div');
         header.className = 'year-header';
         header.textContent = '?';
         gallery.appendChild(header);
-
-        unknownPhotos.forEach(photo => renderCard(photo, -1, true));
+        unknown.forEach(photo => renderCard(photo, -1, true));
     }
 
-    console.log(`✅ Даты: ${sortedYears.length} групп, ${unknownPhotos.length} без тега`);
+    console.log(`✅ ${sortedYears.length} групп по тегам, ${unknown.length} без тега`);
 }
-
 // === ЛЁГКИЙ АНАЛИЗ ЦВЕТА (10×10 пикселей, ~20мс на фото) ===
 function getPhotoHueSimple(imgUrl) {
     return new Promise(resolve => {
