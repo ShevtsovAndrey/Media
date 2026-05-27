@@ -742,53 +742,5 @@ window.addEventListener('load', () => {
     }, false);
 });
 
-
-// Отмена
-const cancelBtn = document.getElementById('cancelEditBtn');
-if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
-        document.getElementById('editModal').classList.remove('active');
-        currentEditKey = null;
-    });
-}
-
-// Сохранение
-const saveBtn = document.getElementById('saveEditBtn');
-if (saveBtn) {
-    saveBtn.addEventListener('click', async () => {
-        const input = document.getElementById('editYearInput');
-        const msg = document.getElementById('editSuccessMsg');
-        const newYear = parseInt(input.value);
-        
-        if (!currentEditKey || isNaN(newYear) || newYear < 1900 || newYear > 2100) {
-            alert('Введите корректный год (1900-2100)');
-            return;
-        }
-        
-        console.log('💾 Сохраняем тег:', currentEditKey, '→', newYear);
-        
-        try {
-            // Сохраняем тег в JSON (теперь он виден ВСЕМ пользователям)
-            await syncJSON([{ key: currentEditKey, tagYear: newYear }], 'updateTag');
-            
-            msg.classList.add('show');
-            setTimeout(() => {
-                document.getElementById('editModal').classList.remove('active');
-                currentEditKey = null;
-                loadGallery(); // Перезагрузка галереи
-            }, 800);
-        } catch (err) {
-            console.error('❌ Ошибка сохранения тега:', err);
-            alert('Не удалось сохранить тег');
-        }
-    });
-}
-
-
-
-
-
-
-
 // Старт
 loadGallery();
