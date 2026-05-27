@@ -270,7 +270,7 @@ filter: invert(1);
 
                                                     /* === МОЗАИКА ===*/
 
-     /* === SCROLL SNAP + МОЗАИКА (все фото на экране + оффсет) === */
+   /* === МОЗАИКА + SCROLL SNAP === */
 #gallery.date-mode {
     scroll-snap-type: y mandatory;
     height: 100vh;
@@ -279,70 +279,104 @@ filter: invert(1);
     -webkit-overflow-scrolling: touch;
     padding: 0;
     display: block !important;
-    scroll-padding-top: 0;
 }
 
 .year-section {
     scroll-snap-align: start;
-    height: 100vh; /* Строго высота экрана */
+    height: 100vh;
     padding: 20px 12px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 10vh; /* ОФФСЕТ: следующий блок виден на 10% */
+    margin-bottom: 10vh; /* Оффсет следующего блока */
     position: relative;
 }
 
-/* Заголовок года занимает меньше места */
 .year-header {
     margin: 2vh 0 3vh;
     font-size: clamp(30px, 15vw, 80px);
-    flex-shrink: 0; /* Не сжимается */
+    flex-shrink: 0;
 }
 
 /* Мозаика */
 .mosaic-grid {
     column-count: 3;
     column-gap: 12px;
+    column-fill: balance; /* Равномерное распределение */
     width: 100%;
     max-width: 1800px;
-    max-height: 75vh; /* Ограничение высоты сетки */
-    overflow: hidden; /* Обрезаем если не влезает */
+    max-height: 78vh;
+    overflow: hidden;
 }
 
 .mosaic-grid .photo-card {
     break-inside: avoid;
-    display: inline-block !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-width: auto !important;
-    flex: none !important;
-    margin: 0 0 8px 0;
+    display: inline-block;
+    width: calc(33.333% - 8px); /* 3 колонки с учётом gap */
+    margin: 0 0 12px 0;
+    position: relative;
+    overflow: hidden;
 }
 
-/* УМЕНЬШАЕМ ФОТО чтобы влезали */
 .mosaic-grid .photo-card img {
-    max-height: calc(75vh / 3); /* Примерно 3 ряда на экран */
-    object-fit: contain;
     width: 100%;
+    height: auto;
+    max-height: 35vh; /* Ограничение высоты */
+    object-fit: cover; /* Заполняем карточку */
+    display: block;
 }
 
-/* Адаптивность */
-@media (max-width: 1024px) { 
-    .mosaic-grid { column-count: 2; }
-    .mosaic-grid .photo-card img { max-height: calc(75vh / 2); }
-}
-@media (max-width: 600px) { 
-    .mosaic-grid { column-count: 1; }
-    .mosaic-grid .photo-card img { max-height: calc(75vh / 1.5); }
-    .year-header { font-size: clamp(25px, 10vw, 50px); }
+/* Адаптивность: ПЛАНШЕТ (2 колонки) */
+@media (max-width: 1024px) {
+    .mosaic-grid { 
+        column-count: 2;
+        column-gap: 10px;
+    }
+    .mosaic-grid .photo-card {
+        width: calc(50% - 5px); /* 2 колонки */
+    }
+    .mosaic-grid .photo-card img {
+        max-height: 40vh;
+    }
 }
 
-/* Скрываем карточки вне мозаики в режиме даты */
-#gallery.date-mode > .photo-card { display: none; }
+/* Адаптивность: МОБИЛЬНЫЙ (1 колонка) */
+@media (max-width: 600px) {
+    .mosaic-grid { 
+        column-count: 1;
+        column-gap: 0;
+        max-height: 80vh;
+    }
+    .mosaic-grid .photo-card {
+        width: 100%; /* На мобильном — полная ширина */
+        margin: 0 0 10px 0;
+    }
+    .mosaic-grid .photo-card img {
+        max-height: none; /* Убираем ограничение на мобильном */
+        max-width: 100%;
+    }
+    .year-header { 
+        font-size: clamp(25px, 10vw, 50px); 
+        margin: 1vh 0 2vh;
+    }
+    .year-section {
+        height: auto; /* На мобильном не фиксируем высоту */
+        min-height: 80vh;
+        margin-bottom: 5vh; /* Меньший оффсет */
+    }
+    #gallery.date-mode {
+        height: auto;
+        scroll-snap-type: none; /* Отключаем snap на мобильном */
+    }
+}
 
-/* Индикатор прокрутки (опционально) */
+/* Скрываем карточки вне мозаики */
+#gallery.date-mode > .photo-card { 
+    display: none; 
+}
+
+/* Стрелка прокрутки */
 .year-section::after {
     content: '↓';
     position: absolute;
@@ -360,7 +394,6 @@ filter: invert(1);
     40% { transform: translateX(-50%) translateY(-10px); }
     60% { transform: translateX(-50%) translateY(-5px); }
 }
-
 
 
 
