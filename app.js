@@ -743,41 +743,6 @@ window.addEventListener('load', () => {
 });
 
 
-
-
-
-
-
-
-// === ЛОГИКА РЕДАКТИРОВАНИЯ ГОДА ===
-let currentEditKey = null;
-
-function openEditModal(key, photoDate, tagYear) {
-    currentEditKey = key;
-    const modal = document.getElementById('editModal');
-    const input = document.getElementById('editYearInput');
-    const msg = document.getElementById('editSuccessMsg');
-    
-    if (!modal || !input) {
-        console.error('❌ Модалка или input не найдены!');
-        return;
-    }
-    
-    msg.classList.remove('show');
-    
-    // Приоритет: Тег > EXIF
-    let val = '';
-    if (tagYear) {
-        val = tagYear;
-    } else if (photoDate && !isNaN(new Date(photoDate).getTime())) {
-        val = new Date(photoDate).getFullYear();
-    }
-    
-    input.value = val;
-    modal.classList.add('active');
-    console.log('📝 Открыта модалка для:', key, 'год:', val);
-}
-
 // Отмена
 const cancelBtn = document.getElementById('cancelEditBtn');
 if (cancelBtn) {
