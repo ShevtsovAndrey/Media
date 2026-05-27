@@ -279,3 +279,14 @@ height: 48px;
     color: #ff6464;
 }
 
+/*иконки*/
+.add-btn img,
+.sort-btn img,
+.delete-btn img,
+.add-date-btn img {
+    width: 65%;
+    height: 65%;
+    object-fit: contain;
+    pointer-events: none; /* Клик проходит сквозь картинку на кнопку */
+filter: invert(1);
+}

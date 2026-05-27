@@ -6,17 +6,19 @@
     <title>Shevtsov Media</title>
     <link rel="stylesheet" href="style.css">
 </head>
+    <!-- БЛЮР ДЛЯ ДРАГАНДРОП -->
 <div id="dragOverlay" class="drag-overlay">Drop photo and load it</div>
 <body>
     <main id="gallery" class="gallery"></main>
     
-    <button id="addBtn" class="add-btn" style="display: none;">+</button>
+    <button id="addBtn" class="add-btn" style="display: none;"><img src="./loader.png" alt="+"></button>
     <button id="sortBtn" class="sort-btn" title="Сменить сортировку">⟳</button>
     <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
 
     <!-- AWS SDK v2 (работает стабильно) -->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1479.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.min.js"></script>
     <script src="app.js"></script>
-    <!-- БЛЮР ДЛЯ ДРАГАНДРОП -->
+
 </body>
 </html>
