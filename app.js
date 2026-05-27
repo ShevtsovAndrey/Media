@@ -170,12 +170,23 @@ async function loadGallery() {
         const jsonKeys = new Set(currentPhotos.map(p => p.key));
 
         // 3. Находим файлы в Яндексе, которых нет в JSON
-        const missingInJson = s3Files
-            .filter(f => !jsonKeys.has(f.Key))
-            .map(f => ({
-                title: f.Key.split('/').pop().replace(/\.[^/.]+$/, '').replace(/_/g, ' '),
-                key: f.Key
-            }));
+        const missingInJson = await Promise.all(
+            s3Files
+                .filter(f => !jsonKeys.has(f.Key))
+                .map(async f => {
+                    const key = f.Key;
+                    const title = key.split('/').pop().replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
+                    
+                    // Пробуем прочитать дату из имени файла
+                    let date = null;
+                    const match = key.match(/(\d{4})(\d{2})(\d{2})/);
+                    if (match) {
+                        date = new Date(`${match[1]}-${match[2]}-${match[3]}`).getTime();
+                    }
+                    
+                    return { title, key, date };
+                })
+        );
 
         // 4. Если есть расхождения — молча исправляем JSON
         if (missingInJson.length > 0) {
@@ -300,21 +311,56 @@ function renderCard(photo, index, isNoDate = false) {
 
 
 if (isAdmin) {
-        if (isNoDate) {
-            // Для фото без даты: две кнопки (-) и (+)
-            card.innerHTML = `
-                <div class="delete-overlay">
-                    <button class="delete-btn" title="Удалить">&minus;</button>
-                </div>
-                `;
-        } else {
-            // Обычная кнопка удаления
-            card.innerHTML = `
-                <div class="delete-overlay">
-                    <button class="delete-btn" title="Удалить">&minus;</button>
-                </div>
-            `;
-        }
+        card.innerHTML = `
+            <div class="delete-overlay">
+                <button class="delete-btn" title="Удалить">
+                    <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+                <button class="edit-meta-btn" title="Редактировать год">
+                    <img src="edit.png">
+                </button>
+            </div>
+        `;
+        
+        card.appendChild(img);
+        
+        // Удаление
+        card.querySelector('.delete-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deletePhoto(photo.key, photo.title, card);
+        });
+        
+        // Редактирование года
+        card.querySelector('.edit-meta-btn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            
+            // Текущее значение: tagYear > date (EXIF)
+            let currentVal = 'нет данных';
+            if (photo.tagYear) {
+                currentVal = photo.tagYear;
+            } else if (photo.date && !isNaN(new Date(photo.date).getTime())) {
+                currentVal = new Date(photo.date).getFullYear();
+            }
+            
+            const newYear = prompt('Введите год для фотографии:', currentVal);
+            if (newYear === null) return; // Отмена
+            
+            const yearNum = parseInt(newYear);
+            if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
+                alert('Некорректный год (1900-2100)');
+                return;
+            }
+            
+            try {
+                await syncJSON([{ key: photo.key, tagYear: yearNum }], 'updateTag');
+                loadGallery(); // Перезагрузка
+            } catch (err) {
+                console.error('Ошибка:', err);
+                alert('Не удалось сохранить');
+            }
+        });
+    } else {
+        card.appendChild(img);
     }
     
     card.appendChild(img);
@@ -401,7 +447,7 @@ async function syncJSON(changes, action, retries = 2) {
     const sha = data.sha;
 
 if (action === 'add') {
-        current.push(...changes);
+current.push(...changes);
     } else if (action === 'delete') {
         current = current.filter(p => p.key !== changes[0].key);
     } else if (action === 'updateTag') {
@@ -409,9 +455,6 @@ if (action === 'add') {
         const idx = current.findIndex(p => p.key === target.key);
         if (idx !== -1) {
             current[idx].tagYear = target.tagYear;
-            console.log('✅ Тег обновлён:', target.key, '→', target.tagYear);
-        } else {
-            console.warn('⚠️ Фото не найдено для обновления тега:', target.key);
         }
     }
     const putRes = await fetch(url, {
