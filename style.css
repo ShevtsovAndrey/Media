@@ -280,7 +280,6 @@ height: 48px;
 }
 
 /*иконки*/
-.add-btn img,
 .sort-btn img,
 .delete-btn img,
 .add-date-btn img {
@@ -289,4 +288,17 @@ height: 48px;
     object-fit: contain;
     pointer-events: none; /* Клик проходит сквозь картинку на кнопку */
 filter: invert(1);
+}
+
+/* Картинка лоадера внутри кнопки */
+.add-btn .loading-icon {
+    width: 60%;
+    height: 60%;
+    object-fit: contain;
+    animation: spin 1s linear infinite; /* Крутится бесконечно */
+    pointer-events: none;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
 }

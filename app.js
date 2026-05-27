@@ -66,7 +66,11 @@ async function uploadFiles(files) {
 
     const btn = document.getElementById('addBtn');
     const originalText = btn ? btn.textContent : '';
-    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+const originalHTML = btn ? btn.innerHTML : ''; // Запоминаем исходную иконку "+"
+if (btn) {
+    btn.innerHTML = '<img src="loader.png" class="loading-icon">';
+    btn.disabled = true;
+}
 
  for (const file of files) {
         try {
@@ -106,7 +110,10 @@ async function uploadFiles(files) {
         }
     }
 
-    if (btn) { btn.textContent = originalText; btn.disabled = false; }
+    if (btn) {
+    btn.innerHTML = originalHTML; // Возвращаем иконку "+"
+    btn.disabled = false;
+}
 }
 
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
@@ -223,7 +230,6 @@ function renderCard(photo, index, isNoDate = false) {
     img.src = imgUrl;
     img.alt = photo.title;
     img.loading = 'lazy';
-    img.style.cursor = 'pointer';
 
     img.onerror = () => { card.style.display = 'none'; };
 
@@ -264,7 +270,9 @@ if (isAdmin) {
             card.innerHTML = `
                 <div class="delete-overlay">
                     <button class="delete-btn" title="Удалить">&minus;</button>
-                    <button class="add-date-btn" title="Добавить дату">+</button>
+                    <button class="add-date-btn" title="Добавить дату">
+    <img src="./edit.png" alt="Редактировать">
+</button>
                 </div>
             `;
         } else {
@@ -445,10 +453,10 @@ const photoMetaCache = JSON.parse(localStorage.getItem('photoMetaCache') || '{}'
 // Обновляем иконку кнопки
 function updateSortIcon() {
     if (!sortBtn) return;
-    const icons = { date: 'ВРЕМЯ', color: 'ЦВЕТ' };
-    sortBtn.textContent = icons[sortMode];
-    
+    const icon = sortMode === 'date' ? './timer.png' : './color.png';
+    sortBtn.innerHTML = `<img src="${icon}" alt="Сортировка">`;
 }
+
 sortMode = 'date'; // Стартовый режим
 updateSortIcon();
 
@@ -589,7 +597,7 @@ async function renderSortedGallery(photosSource) {
     if (photosWithoutDate.length > 0) {
         const unknownHeader = document.createElement('div');
         unknownHeader.className = 'year-header';
-        unknownHeader.textContent = '📁 Неизвестно';
+        unknownHeader.textContent = 'Неизвестно';
         gallery.appendChild(unknownHeader);
         
         photosWithoutDate.forEach(photo => {
