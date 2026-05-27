@@ -570,6 +570,7 @@ async function getPhotoHue(key, imgUrl) {
 }
 
 // === СОРТИРОВКА (2 режима: дата и цвет) ===
+// === СОРТИРОВКА (2 режима: дата и цвет) ===
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Сортировка...</div>';
@@ -620,8 +621,9 @@ async function renderSortedGallery(photosSource) {
     // === РЕНДЕР (только для режима ДАТЫ) ===
     gallery.innerHTML = '';
     
-   // 1. Сначала "Неизвестно" (видна ВСЕМ)
+    // 1. Сначала "Неизвестно" (ТОЛЬКО если есть фото без года)
     if (photosWithoutYear.length > 0) {
+        console.log(`📁 Показываю "?" (${photosWithoutYear.length} фото без года)`);
         const unknownHeader = document.createElement('div');
         unknownHeader.className = 'year-header';
         unknownHeader.textContent = '?';
@@ -632,14 +634,17 @@ async function renderSortedGallery(photosSource) {
         });
     }
     
-    // 2. Потом фото с годами (с группировкой)
+    // 2. Потом фото с годами (с группировкой) — ДЛЯ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
     if (photosWithYear.length > 0) {
+        console.log(`📅 Показываю годы (${photosWithYear.length} фото с годом)`);
         let lastYear = null;
         
         photosWithYear.forEach(photo => {
             const year = getSortYear(photo).toString();
             
+            // Показываем заголовок года, если он сменился
             if (year !== lastYear) {
+                console.log(`  → Заголовок: ${year}`);
                 const header = document.createElement('div');
                 header.className = 'year-header';
                 header.textContent = year;
