@@ -237,33 +237,48 @@ function renderCard(photo, index, isNoDate = false) {
 
     const imgUrl = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${photo.key}`;
 
+    // Создаём img элемент
     const img = document.createElement('img');
     img.src = imgUrl;
     img.alt = photo.title;
     img.loading = 'lazy';
-    img.style.cursor = 'pointer';
+
     img.onerror = () => { card.style.display = 'none'; };
 
-    // Touch/Click для лайтбокса
-    let touchStartX = 0, touchStartY = 0;
+    // Переменные для отслеживания касания
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    // 1. Запоминаем где коснулись (НЕ открываем лайтбокс сразу!)
     img.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
     }, { passive: true });
+
+    // 2. При отпускании проверяем: если сдвиг < 15px — это тап
     img.addEventListener('touchend', (e) => {
-        if (Math.abs(e.changedTouches[0].clientX - touchStartX) < 15 &&
-            Math.abs(e.changedTouches[0].clientY - touchStartY) < 15) {
-            e.preventDefault(); e.stopPropagation(); openLightbox(imgUrl);
+        const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
+        const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+
+        // Если палец почти не двигался — открываем лайтбокс
+        if (deltaX < 15 && deltaY < 15) {
+            e.preventDefault();
+            e.stopPropagation();
+            openLightbox(imgUrl);
         }
+        // Если двигался — это скролл, ничего не делаем
     }, { passive: false });
+
+    // 3. Для компьютера — обычный клик
     img.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation(); openLightbox(imgUrl);
+        e.preventDefault();
+        e.stopPropagation();
+        openLightbox(imgUrl);
     });
 
-    // Сначала картинка
-    card.appendChild(img);
 
-    // === КНОПКИ (ОДИН БЛОК, без перезаписи) ===
-    if (isAdmin) {
+
+ if (isAdmin) {
         card.innerHTML = `
             <div class="delete-overlay">
                 <button class="delete-btn" title="Удалить">
@@ -274,42 +289,49 @@ function renderCard(photo, index, isNoDate = false) {
                 </button>
             </div>
         `;
+    }
+
+
+
+
+
+if (isAdmin) {
+        if (isNoDate) {
+            // Для фото без даты: две кнопки (-) и (+)
+            card.innerHTML = `
+                <div class="delete-overlay">
+                    <button class="delete-btn" title="Удалить">&minus;</button>
+                </div>
+                `;
+        } else {
+            // Обычная кнопка удаления
+            card.innerHTML = `
+                <div class="delete-overlay">
+                    <button class="delete-btn" title="Удалить">&minus;</button>
+                </div>
+            `;
+        }
+    }
+    
+    card.appendChild(img);
+
+
+    if (isAdmin) {
+        const deleteBtn = card.querySelector('.delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deletePhoto(photo.key, photo.title, card);
+            });
+        }
         
-        // Удаление
-        card.querySelector('.delete-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            deletePhoto(photo.key, photo.title, card);
-        });
-        
-        // Редактирование года (через prompt — просто и надёжно)
-        card.querySelector('.edit-meta-btn').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            
-            // Текущее значение: Тег > EXIF
-            let current = '';
-            if (photo.tagYear) current = photo.tagYear;
-            else if (photo.date && !isNaN(new Date(photo.date).getTime())) {
-                current = new Date(photo.date).getFullYear();
-            }
-            
-            const newYear = prompt('Введите год для фотографии:', current || '2024');
-            if (newYear === null) return; // Отмена
-            
-            const yearNum = parseInt(newYear);
-            if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
-                alert('Некорректный год (1900-2100)');
-                return;
-            }
-            
-            try {
-                await syncJSON([{ key: photo.key, tagYear: yearNum }], 'updateTag');
-                alert('✓ Год обновлён');
-                loadGallery(); // Перезагрузка с новыми данными
-            } catch (err) {
-                console.error('Ошибка:', err);
-                alert('Не удалось сохранить');
-            }
-        });
+        const editBtn = card.querySelector('.edit-meta-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEditModal(photo.key, photo.date, photo.tagYear);
+            });
+        }
     }
 
     document.getElementById('gallery').appendChild(card);
