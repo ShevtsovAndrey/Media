@@ -22,7 +22,8 @@ AWS.config.update({
 });
 const s3 = new AWS.S3();
 
-
+//Сортировка для всех пользователей
+window.galleryPhotos = [];
 
 // Хелпер: возвращает год для сортировки (Тег > EXIF > null)
 function getSortYear(photo) {
@@ -148,6 +149,7 @@ async function loadGallery() {
             currentPhotos = JSON.parse(atob(data.content));
             sha = data.sha;
         }
+        window.galleryPhotos = currentPhotos;
 
                // === DEBUG: проверка дат ===
             console.log('🔍 Проверка дат в фото:');
@@ -514,26 +516,15 @@ updateSortIcon();
 
 // Переключение режима
 if (sortBtn) {
-    sortBtn.addEventListener('click', async () => {
-        const modes = ['date', 'color'];
-        const idx = modes.indexOf(sortMode);
-        sortMode = modes[(idx + 1) % modes.length];
+    sortBtn.addEventListener('click', () => {
+        // Переключаем: date <-> color
+        sortMode = sortMode === 'date' ? 'color' : 'date';
         localStorage.setItem('gallerySortMode', sortMode);
         updateSortIcon();
         
-        // Получаем актуальные фото из JSON (быстро, из кэша браузера)
-        try {
-            const token = localStorage.getItem('github_token');
-            const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`, {
-                headers: { 'Authorization': `token ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                const photos = JSON.parse(atob(data.content));
-                renderSortedGallery(photos); // ← Передаём массив
-            }
-        } catch(e) {
-            console.error('Ошибка при сортировке:', e);
+        // Сортируем УЖЕ ЗАГРУЖЕННЫЕ фото (работает у всех)
+        if (window.galleryPhotos?.length > 0) {
+            renderSortedGallery(window.galleryPhotos);
         }
     });
 }
