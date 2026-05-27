@@ -620,7 +620,7 @@ async function renderSortedGallery(photosSource) {
     // === РЕНДЕР (только для режима ДАТЫ) ===
     gallery.innerHTML = '';
     
-    // 1. Сначала "Неизвестно" (видна ВСЕМ)
+   // 1. Сначала "Неизвестно" (видна ВСЕМ)
     if (photosWithoutYear.length > 0) {
         const unknownHeader = document.createElement('div');
         unknownHeader.className = 'year-header';
