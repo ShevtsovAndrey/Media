@@ -139,8 +139,11 @@ async function loadGallery() {
         const token = localStorage.getItem('github_token');
         const jsonUrl = `https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`;
 
-        // 1. Получаем текущий JSON с GitHub
-        const jsonRes = await fetch(jsonUrl, { headers: { 'Authorization': `token ${token}` } });
+        // 1. Получаем JSON с GitHub (заголовок только если есть токен)
+        const headers = {};
+        if (token) headers['Authorization'] = `token ${token}`;
+        
+        const jsonRes = await fetch(jsonUrl, { headers });
         let currentPhotos = [];
         let sha = null;
         
@@ -148,6 +151,9 @@ async function loadGallery() {
             const data = await jsonRes.json();
             currentPhotos = JSON.parse(atob(data.content));
             sha = data.sha;
+            console.log(`✅ JSON загружен: ${currentPhotos.length} фото`);
+        } else {
+            console.warn(`⚠️ Не удалось загрузить JSON: статус ${jsonRes.status}`);
         }
 
         // 2. Получаем список файлов из Яндекса
@@ -168,24 +174,21 @@ async function loadGallery() {
                 const key = f.Key;
                 const title = key.split('/').pop().replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
                 
-                // Парсим дату из имени файла: 177978825761_IMG_20250306_... → 2025
                 let date = null;
                 let tagYear = null;
                 const match = key.match(/(\d{4})(\d{2})(\d{2})/);
                 if (match) {
                     const year = parseInt(match[1]);
-                    // Проверяем, что год адекватный
                     if (year >= 1999 && year <= 2100) {
                         date = new Date(`${match[1]}-${match[2]}-${match[3]}`).getTime();
-                        tagYear = year; // ← ВАЖНО: сохраняем год как тег
+                        tagYear = year;
                     }
                 }
-                
-                return { title, key, date, tagYear }; // ← Добавили tagYear
+                return { title, key, date, tagYear };
             });
 
-        // 4. Если есть расхождения — молча исправляем JSON
-        if (missingInJson.length > 0) {
+        // 4. Автосинхронизация (только если есть токен)
+        if (missingInJson.length > 0 && token) {
             console.log(`🔄 Автосинхронизация: +${missingInJson.length} файлов`);
             const updatedPhotos = [...currentPhotos, ...missingInJson];
             
@@ -221,9 +224,13 @@ async function loadGallery() {
         // Фоллбэк
         try {
             const token = localStorage.getItem('github_token');
-            const fallbackRes = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`, {
-                headers: { 'Authorization': `token ${token}` }
-            });
+            const headers = {};
+            if (token) headers['Authorization'] = `token ${token}`;
+            
+            const fallbackRes = await fetch(
+                `https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`,
+                { headers }
+            );
             if (fallbackRes.ok) {
                 const data = await fallbackRes.json();
                 const photos = JSON.parse(atob(data.content));
@@ -238,7 +245,6 @@ async function loadGallery() {
         }
     }
 }
-
 // Рендер карточки
 function renderCard(photo, index, isNoDate = false) {
     const card = document.createElement('div');
