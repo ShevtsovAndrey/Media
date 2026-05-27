@@ -252,89 +252,52 @@ function renderCard(photo, index, isNoDate = false) {
 
     const imgUrl = `${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${photo.key}`;
 
-    // Создаём img элемент
     const img = document.createElement('img');
     img.src = imgUrl;
     img.alt = photo.title;
     img.loading = 'lazy';
-
+    img.style.cursor = 'pointer';
     img.onerror = () => { card.style.display = 'none'; };
 
-    // Переменные для отслеживания касания
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    // 1. Запоминаем где коснулись (НЕ открываем лайтбокс сразу!)
+    // Touch/Click для лайтбокса
+    let touchStartX = 0, touchStartY = 0;
     img.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
     }, { passive: true });
-
-    // 2. При отпускании проверяем: если сдвиг < 15px — это тап
     img.addEventListener('touchend', (e) => {
-        const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
-        const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
-
-        // Если палец почти не двигался — открываем лайтбокс
-        if (deltaX < 15 && deltaY < 15) {
-            e.preventDefault();
-            e.stopPropagation();
-            openLightbox(imgUrl);
+        if (Math.abs(e.changedTouches[0].clientX - touchStartX) < 15 &&
+            Math.abs(e.changedTouches[0].clientY - touchStartY) < 15) {
+            e.preventDefault(); e.stopPropagation(); openLightbox(imgUrl);
         }
-        // Если двигался — это скролл, ничего не делаем
     }, { passive: false });
-
-    // 3. Для компьютера — обычный клик
     img.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        openLightbox(imgUrl);
+        e.preventDefault(); e.stopPropagation(); openLightbox(imgUrl);
     });
 
-
-
- if (isAdmin) {
-        card.innerHTML = `
-            <div class="delete-overlay">
-                <button class="delete-btn" title="Удалить">
-                    <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-                <button class="edit-meta-btn" title="Редактировать год">
-                    <img src="edit.png">
-                </button>
-            </div>
-        `;
-    }
-
-
-
-
-
-if (isAdmin) {
-        card.innerHTML = `
-            <div class="delete-overlay">
-                <button class="delete-btn" title="Удалить">
-                    <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-                <button class="edit-meta-btn" title="Редактировать год">
-                    <img src="edit.png">
-                </button>
-            </div>
-        `;
+    // === КНОПКИ (только админу) ===
+    if (isAdmin) {
+        const overlay = document.createElement('div');
+        overlay.className = 'delete-overlay';
         
-        card.appendChild(img);
-        
-        // Удаление
-        card.querySelector('.delete-btn').addEventListener('click', (e) => {
+        // Кнопка удаления
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.title = 'Удалить';
+        delBtn.innerHTML = '<svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        delBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             deletePhoto(photo.key, photo.title, card);
         });
         
-        // Редактирование года
-        card.querySelector('.edit-meta-btn').addEventListener('click', async (e) => {
+        // Кнопка редактирования
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-meta-btn';
+        editBtn.title = 'Редактировать год';
+        editBtn.innerHTML = '<img src="edit.png">';
+        editBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             
-            // Текущее значение: tagYear > date (EXIF)
+            // Текущее значение
             let currentVal = 'нет данных';
             if (photo.tagYear) {
                 currentVal = photo.tagYear;
@@ -343,7 +306,7 @@ if (isAdmin) {
             }
             
             const newYear = prompt('Введите год для фотографии:', currentVal);
-            if (newYear === null) return; // Отмена
+            if (newYear === null) return;
             
             const yearNum = parseInt(newYear);
             if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
@@ -353,37 +316,18 @@ if (isAdmin) {
             
             try {
                 await syncJSON([{ key: photo.key, tagYear: yearNum }], 'updateTag');
-                loadGallery(); // Перезагрузка
+                loadGallery();
             } catch (err) {
-                console.error('Ошибка:', err);
                 alert('Не удалось сохранить');
             }
         });
-    } else {
-        card.appendChild(img);
+        
+        overlay.appendChild(delBtn);
+        overlay.appendChild(editBtn);
+        card.appendChild(overlay);
     }
     
     card.appendChild(img);
-
-
-    if (isAdmin) {
-        const deleteBtn = card.querySelector('.delete-btn');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                deletePhoto(photo.key, photo.title, card);
-            });
-        }
-        
-        const editBtn = card.querySelector('.edit-meta-btn');
-        if (editBtn) {
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openEditModal(photo.key, photo.date, photo.tagYear);
-            });
-        }
-    }
-
     document.getElementById('gallery').appendChild(card);
 }
 
