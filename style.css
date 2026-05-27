@@ -283,8 +283,8 @@ height: 48px;
 .sort-btn img,
 .delete-btn img,
 .add-date-btn img {
-    width: 65%;
-    height: 65%;
+    width: 50%;
+    height: 50%;
     object-fit: contain;
     pointer-events: none; /* Клик проходит сквозь картинку на кнопку */
 filter: invert(1);
@@ -292,11 +292,12 @@ filter: invert(1);
 
 /* Картинка лоадера внутри кнопки */
 .add-btn .loading-icon {
-    width: 60%;
-    height: 60%;
+    width: 50%;
+    height: 50%;
     object-fit: contain;
     animation: spin 1s linear infinite; /* Крутится бесконечно */
     pointer-events: none;
+    filter: invert(1);
 }
 
 @keyframes spin {
