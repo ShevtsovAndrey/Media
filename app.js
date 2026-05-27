@@ -252,7 +252,8 @@ async function loadGallery() {
         }
     }
 }
-// Рендер карточки
+
+// Рендер карточки (исправлено: явные имена параметров)
 function renderCard(photo, index, isNoDate = false, target = null) {
     const card = document.createElement('div');
     card.className = 'photo-card' + (isNoDate ? ' no-date' : '');
@@ -287,7 +288,6 @@ function renderCard(photo, index, isNoDate = false, target = null) {
         const overlay = document.createElement('div');
         overlay.className = 'delete-overlay';
         
-        // Кнопка удаления
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.title = 'Удалить';
@@ -297,37 +297,28 @@ function renderCard(photo, index, isNoDate = false, target = null) {
             deletePhoto(photo.key, photo.title, card);
         });
         
-        // Кнопка редактирования
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-meta-btn';
         editBtn.title = 'Редактировать год';
         editBtn.innerHTML = '<img src="edit.png">';
         editBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            
-            // Текущее значение
             let currentVal = 'нет данных';
-            if (photo.tagYear) {
-                currentVal = photo.tagYear;
-            } else if (photo.date && !isNaN(new Date(photo.date).getTime())) {
+            if (photo.tagYear) currentVal = photo.tagYear;
+            else if (photo.date && !isNaN(new Date(photo.date).getTime())) {
                 currentVal = new Date(photo.date).getFullYear();
             }
-            
             const newYear = prompt('Введите год для фотографии:', currentVal);
             if (newYear === null) return;
-            
             const yearNum = parseInt(newYear);
             if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
                 alert('Нужна дата от 1999-?');
                 return;
             }
-            
             try {
                 await syncJSON([{ key: photo.key, tagYear: yearNum }], 'updateTag');
                 loadGallery();
-            } catch (err) {
-                alert('Ошибка сохранения');
-            }
+            } catch (err) { alert('Ошибка сохранения'); }
         });
         
         overlay.appendChild(delBtn);
@@ -337,8 +328,11 @@ function renderCard(photo, index, isNoDate = false, target = null) {
     
     card.appendChild(img);
     
-    // Если передан target (для мозаики) → кидаем туда, иначе в gallery
-    (target || document.getElementById('gallery')).appendChild(card);
+    // Добавляем в целевой контейнер или в галерею
+    const container = target || document.getElementById('gallery');
+    if (container && container.appendChild) {
+        container.appendChild(card);
+    }
 }
 
 // Кнопка "+"
@@ -623,7 +617,7 @@ async function renderSortedGallery(photosSource) {
         withHue.forEach(p => {
             const y = p.tagYear;
             const valid = (y !== null && y !== undefined && typeof y === 'number' && y >= 1999 && y <= 2100);
-            renderCard(p, -1, !valid);
+            renderCard(p, -1, !valid, null); // ← СТАЛО: явно передаём null как target
         });
         return;
     }

@@ -268,6 +268,75 @@ filter: invert(1);
     height: 50%;
 }
 
+                                                    /* === МОЗАИКА ===*/
+
+                                                    
+#gallery.date-mode {
+    scroll-snap-type: y mandatory; /* Жёсткое прилипание */
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
+    display: block !important; /* Отключаем flex для режима даты */
+}
+
+.year-section {
+    scroll-snap-align: start;
+    min-height: 100vh; /* Год на весь экран */
+    padding: 20px 12px 60px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Мозаика: переопределяем стили карточек */
+.mosaic-grid {
+    column-count: 3;
+    column-gap: 12px;
+    width: 100%;
+    max-width: 1800px;
+}
+
+.mosaic-grid .photo-card {
+    break-inside: avoid;
+    display: inline-block !important; /* Фикс для column-layout */
+    width: 100% !important; /* Отменяем 50% из базового стиля */
+    max-width: none !important;
+    min-width: auto !important;
+    flex: none !important; /* Отключаем flex-свойства */
+    margin: 0 0 12px 0;
+}
+
+.mosaic-grid .photo-card img {
+    max-height: none; /* Разрешаем любую высоту в мозаике */
+}
+
+/* Адаптивность */
+@media (max-width: 1024px) { .mosaic-grid { column-count: 2; } }
+@media (max-width: 600px)  { .mosaic-grid { column-count: 1; } }
+
+/* Скрываем карточки вне мозаики в режиме даты */
+#gallery.date-mode > .photo-card { display: none; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             /*ВЫ ВХОДИТЕ В СВЕТЛУЮ ТЕМУ! АККУРАТНЕЕ С НАСТРОЙКАМИ!*/
 
@@ -339,3 +408,4 @@ filter: invert(1);
         border-left-color: #cc0000;
     }
 }
+
