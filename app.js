@@ -22,6 +22,18 @@ AWS.config.update({
 });
 const s3 = new AWS.S3();
 
+
+
+// Хелпер: возвращает год для сортировки (Тег > EXIF > null)
+function getSortYear(photo) {
+    if (photo.tagYear) return photo.tagYear;
+    if (photo.date && !isNaN(new Date(photo.date).getTime())) return new Date(photo.date).getFullYear();
+    return null;
+}
+
+
+
+
 //ФУНКЦИЯ ЧТЕНИЯ EXIF
 function getExifDate(file) {
     return new Promise((resolve) => {
@@ -264,6 +276,25 @@ function renderCard(photo, index, isNoDate = false) {
         openLightbox(imgUrl);
     });
 
+
+
+ if (isAdmin) {
+        card.innerHTML = `
+            <div class="delete-overlay">
+                <button class="delete-btn" title="Удалить">
+                    <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+                <button class="edit-meta-btn" title="Редактировать год">
+                    <img src="edit.png">
+                </button>
+            </div>
+        `;
+    }
+
+
+
+
+
 if (isAdmin) {
         if (isNoDate) {
             // Для фото без даты: две кнопки (-) и (+)
@@ -287,12 +318,20 @@ if (isAdmin) {
     
     card.appendChild(img);
 
+
     if (isAdmin) {
+        // Кнопка удаления (твоя старая логика)
         card.querySelector('.delete-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             deletePhoto(photo.key, photo.title, card);
         });
+        // Кнопка редактирования
+        card.querySelector('.edit-meta-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditModal(photo.key, photo.date, photo.tagYear);
+        });
     }
+
     document.getElementById('gallery').appendChild(card);
 }
 
@@ -355,8 +394,15 @@ async function syncJSON(changes, action, retries = 2) {
     try { current = JSON.parse(atob(data.content)); } catch(e) { current = []; }
     const sha = data.sha;
 
-    if (action === 'add') current.push(...changes);
-    else current = current.filter(p => p.key !== changes[0].key);
+ if (action === 'add') {
+        current.push(...changes);
+    } else if (action === 'delete') {
+        current = current.filter(p => p.key !== changes[0].key);
+    } else if (action === 'updateTag') {
+        const target = changes[0];
+        const idx = current.findIndex(p => p.key === target.key);
+        if (idx !== -1) current[idx].tagYear = target.tagYear;
+    }
 
     const putRes = await fetch(url, {
         method: 'PUT',
@@ -549,19 +595,14 @@ async function renderSortedGallery(photosSource) {
         return;
     }
 
-    // === РАЗДЕЛЯЕМ на фото с датой и без ===
-    const photosWithDate = photos.filter(p => {
-        return p.date && !isNaN(new Date(p.date).getTime());
-    });
-    
-    const photosWithoutDate = photos.filter(p => {
-        return !p.date || isNaN(new Date(p.date).getTime());
-    });
+    // === РАЗДЕЛЯЕМ: есть год (тег или EXIF) / нет года ===
+    const photosWithYear = photos.filter(p => getSortYear(p) !== null);
+    const photosWithoutYear = photos.filter(p => getSortYear(p) === null);
 
     // === СОРТИРОВКА ===
     if (sortMode === 'date') {
-        // Сортируем фото с датой: новые → старые
-        photosWithDate.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // Сортируем фото с годом: новые → старые
+        photosWithYear.sort((a, b) => getSortYear(b) - getSortYear(a));
     } 
     else if (sortMode === 'color') {
         // Сортируем ВСЕ фото по цвету (HUE)
@@ -582,8 +623,8 @@ async function renderSortedGallery(photosSource) {
         // Рендерим ВСЕ фото (без заголовков!)
         gallery.innerHTML = '';
         allWithHue.forEach(photo => {
-            const isNoDate = !photo.date || isNaN(new Date(photo.date).getTime());
-            renderCard(photo, -1, isNoDate);
+            const isNoYear = getSortYear(photo) === null;
+            renderCard(photo, -1, isNoYear);
         });
         
         console.log(`✅ Сортировка по цвету: ${allWithHue.length} фото`);
@@ -594,23 +635,23 @@ async function renderSortedGallery(photosSource) {
     gallery.innerHTML = '';
     
     // 1. Сначала "Неизвестно" (видна ВСЕМ)
-    if (photosWithoutDate.length > 0) {
+    if (photosWithoutYear.length > 0) {
         const unknownHeader = document.createElement('div');
         unknownHeader.className = 'year-header';
-        unknownHeader.textContent = 'Неизвестно';
+        unknownHeader.textContent = '?';
         gallery.appendChild(unknownHeader);
         
-        photosWithoutDate.forEach(photo => {
-            renderCard(photo, -1, true); // true = без даты
+        photosWithoutYear.forEach(photo => {
+            renderCard(photo, -1, true); // true = без года
         });
     }
     
-    // 2. Потом фото с датами (с группировкой по годам)
-    if (photosWithDate.length > 0) {
+    // 2. Потом фото с годами (с группировкой)
+    if (photosWithYear.length > 0) {
         let lastYear = null;
         
-        photosWithDate.forEach(photo => {
-            const year = new Date(photo.date).getFullYear().toString();
+        photosWithYear.forEach(photo => {
+            const year = getSortYear(photo).toString();
             
             if (year !== lastYear) {
                 const header = document.createElement('div');
@@ -624,7 +665,7 @@ async function renderSortedGallery(photosSource) {
         });
     }
     
-    console.log(`✅ ${photosWithDate.length} с датой, ${photosWithoutDate.length} без даты`);
+    console.log(`✅ ${photosWithYear.length} с годом, ${photosWithoutYear.length} без года`);
 }
 
 // === ЛЁГКИЙ АНАЛИЗ ЦВЕТА (10×10 пикселей, ~20мс на фото) ===
@@ -714,6 +755,59 @@ window.addEventListener('load', () => {
         }
     }, false);
 });
+
+
+
+
+
+
+
+
+// === ЛОГИКА РЕДАКТИРОВАНИЯ ГОДА ===
+let currentEditKey = null;
+
+function openEditModal(key, exifDate, tagYear) {
+    currentEditKey = key;
+    const modal = document.getElementById('editModal');
+    const input = document.getElementById('editYearInput');
+    const msg = document.getElementById('editSuccessMsg');
+    msg.classList.remove('show');
+
+    // Приоритет: Тег > EXIF > Неизвестно
+    let val = 'Неизвестно';
+    if (tagYear) val = tagYear;
+    else if (exifDate && !isNaN(new Date(exifDate).getTime())) val = new Date(exifDate).getFullYear();
+    
+    input.value = val === 'Неизвестно' ? '' : val;
+    modal.classList.add('active');
+}
+
+document.getElementById('cancelEditBtn').addEventListener('click', () => {
+    document.getElementById('editModal').classList.remove('active');
+});
+
+document.getElementById('saveEditBtn').addEventListener('click', async () => {
+    const input = document.getElementById('editYearInput');
+    const newYear = parseInt(input.value);
+    if (!currentEditKey || isNaN(newYear) || newYear < 1900 || newYear > 2100) {
+        alert('Введите корректный год (1900-2100)');
+        return;
+    }
+
+    // Сохраняем тег в JSON
+    await syncJSON([{ key: currentEditKey, tagYear: newYear }], 'updateTag');
+    
+    document.getElementById('editSuccessMsg').classList.add('show');
+    setTimeout(() => {
+        document.getElementById('editModal').classList.remove('active');
+        loadGallery(); // Перезагрузка для применения сортировки
+    }, 800);
+});
+
+
+
+
+
 
 
 

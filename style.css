@@ -37,22 +37,6 @@ body {
 }
 .photo-card:hover img { transform: scale(1.02); }
 
-/* Затемнение и кнопка удаления */
-.delete-overlay {
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
-    background: rgba(0,0,0,0.45); 
-    opacity: 0; 
-    transition: opacity 0.2s;
-    display: flex; 
-    align-items: flex-start; 
-    justify-content: flex-start; 
-    padding: 12px;
-    pointer-events: none;
-}
 .photo-card:hover .delete-overlay { 
     opacity: 1; 
     pointer-events: auto; 
@@ -303,3 +287,43 @@ filter: invert(1);
 @keyframes spin {
     100% { transform: rotate(360deg); }
 }
+
+.edit-modal {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 3000; opacity:0; pointer-events:none; transition: opacity 0.2s;
+}
+.edit-modal.active { opacity:1; pointer-events:auto; }
+.edit-modal-content {
+    background:#151515; padding:20px; border-radius:12px; width:280px;
+    text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5);
+}
+.edit-modal-content input {
+    background:#222; border:1px solid #444; color:#fff; padding:8px;
+    border-radius:6px; width:100%; margin:10px 0 15px; font-size:16px;
+    text-align:center; outline:none;
+}
+.edit-modal-actions { display:flex; gap:10px; justify-content:center; }
+.edit-modal-actions button {
+    padding:8px 12px; border:none; border-radius:6px; cursor:pointer;
+    background:#333; color:#fff; font-size:14px; transition:0.2s;
+}
+.edit-modal-actions button:hover { background:#444; }
+#saveEditBtn { background:#2ecc71; display:flex; align-items:center; justify-content:center; gap:6px; }
+#saveEditBtn img { width:18px; height:18px; }
+.success-msg { color:#2ecc71; margin-top:12px; font-size:13px; opacity:0; transition:0.3s; height:18px; }
+.success-msg.show { opacity:1; }
+
+/* Кнопка редактирования рядом с удалением */
+.delete-overlay {
+    display:flex; gap:8px; align-items:flex-start; /* Кнопки в ряд */
+}
+.edit-meta-btn {
+    width:24px; height:24px; background:rgba(46,204,113,0.9);
+    border:none; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.4);
+    transition:transform 0.2s;
+}
+.edit-meta-btn:hover { transform:scale(1.1); }
+.edit-meta-btn img { width:14px; height:14px; }

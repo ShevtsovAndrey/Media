@@ -8,6 +8,20 @@
 </head>
     <!-- БЛЮР ДЛЯ ДРАГАНДРОП -->
 <div id="dragOverlay" class="drag-overlay">Drop photo and load it</div>
+    <!-- КНОПКА ДОБАВЛЕНИЯ ТЕГОВ -->
+<div id="editModal" class="edit-modal">
+    <div class="edit-modal-content">
+        <h3 style="margin:0 0 10px; color:#fff;">Редактировать год</h3>
+        <label style="color:#ccc; font-size:14px;">Год:</label>
+        <input type="number" id="editYearInput" min="1900" max="2100" placeholder="Например: 2024">
+        <div class="edit-modal-actions">
+            <button id="cancelEditBtn">Отмена</button>
+            <button id="saveEditBtn" title="Применить"><img src="edit.png" class="icon-svg"></button>
+        </div>
+        <div id="editSuccessMsg" class="success-msg">тег добавлен</div>
+    </div>
+</div>
+
 <body>
     <main id="gallery" class="gallery"></main>
     
