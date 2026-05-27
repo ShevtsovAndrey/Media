@@ -253,7 +253,7 @@ async function loadGallery() {
     }
 }
 // Рендер карточки
-function renderCard(photo, index, isNoDate = false) {
+function renderCard(photo, index, isNoDate = false, target = null) {
     const card = document.createElement('div');
     card.className = 'photo-card' + (isNoDate ? ' no-date' : '');
     card.dataset.key = photo.key;
@@ -336,7 +336,9 @@ function renderCard(photo, index, isNoDate = false) {
     }
     
     card.appendChild(img);
-    document.getElementById('gallery').appendChild(card);
+    
+    // Если передан target (для мозаики) → кидаем туда, иначе в gallery
+    (target || document.getElementById('gallery')).appendChild(card);
 }
 
 // Кнопка "+"
