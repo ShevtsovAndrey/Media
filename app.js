@@ -608,6 +608,7 @@ async function renderSortedGallery(photosSource) {
 
     // === РЕЖИМ ЦВЕТА ===
     if (sortMode === 'color') {
+        gallery.classList.remove('date-mode'); // Выключаем snap-scroll
         const withHue = await Promise.all(photos.map(async p => {
             const cacheKey = `hue_${p.key}`;
             let hue = localStorage.getItem(cacheKey);
