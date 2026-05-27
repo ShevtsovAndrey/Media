@@ -175,7 +175,7 @@ async function loadGallery() {
                 if (match) {
                     const year = parseInt(match[1]);
                     // Проверяем, что год адекватный
-                    if (year >= 2000 && year <= 2100) {
+                    if (year >= 1999 && year <= 2100) {
                         date = new Date(`${match[1]}-${match[2]}-${match[3]}`).getTime();
                         tagYear = year; // ← ВАЖНО: сохраняем год как тег
                     }
@@ -305,7 +305,7 @@ function renderCard(photo, index, isNoDate = false) {
             
             const yearNum = parseInt(newYear);
             if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
-                alert('Некорректный год (1900-2100)');
+                alert('Нужна дата от 1999-?');
                 return;
             }
             
@@ -313,7 +313,7 @@ function renderCard(photo, index, isNoDate = false) {
                 await syncJSON([{ key: photo.key, tagYear: yearNum }], 'updateTag');
                 loadGallery();
             } catch (err) {
-                alert('Не удалось сохранить');
+                alert('Ошибка сохранения');
             }
         });
         
@@ -624,7 +624,7 @@ async function renderSortedGallery(photosSource) {
     if (unknown.length > 0) {
         const header = document.createElement('div');
         header.className = 'year-header';
-        header.textContent = '?';
+        header.textContent = '-';
         gallery.appendChild(header);
         unknown.forEach(photo => renderCard(photo, -1, true));
     }
