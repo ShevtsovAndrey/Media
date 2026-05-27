@@ -301,11 +301,8 @@ if (isAdmin) {
             card.innerHTML = `
                 <div class="delete-overlay">
                     <button class="delete-btn" title="Удалить">&minus;</button>
-                    <button class="add-date-btn" title="Добавить дату">
-    <img src="./edit.png" alt="Редактировать">
-</button>
                 </div>
-            `;
+                `;
         } else {
             // Обычная кнопка удаления
             card.innerHTML = `
