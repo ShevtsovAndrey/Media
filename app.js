@@ -570,7 +570,6 @@ async function getPhotoHue(key, imgUrl) {
 }
 
 // === СОРТИРОВКА (2 режима: дата и цвет) ===
-// === СОРТИРОВКА (2 режима: дата и цвет) ===
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Сортировка...</div>';
@@ -582,17 +581,8 @@ async function renderSortedGallery(photosSource) {
         return;
     }
 
-    // === РАЗДЕЛЯЕМ: есть год (тег или EXIF) / нет года ===
-    const photosWithYear = photos.filter(p => getSortYear(p) !== null);
-    const photosWithoutYear = photos.filter(p => getSortYear(p) === null);
-
-    // === СОРТИРОВКА ===
-    if (sortMode === 'date') {
-        // Сортируем фото с годом: новые → старые
-        photosWithYear.sort((a, b) => getSortYear(b) - getSortYear(a));
-    } 
-    else if (sortMode === 'color') {
-        // Сортируем ВСЕ фото по цвету (HUE)
+    // === РЕЖИМ ЦВЕТА (без изменений) ===
+    if (sortMode === 'color') {
         const allWithHue = await Promise.all(photos.map(async p => {
             const cacheKey = `hue_${p.key}`;
             let hue = localStorage.getItem(cacheKey);
@@ -604,59 +594,58 @@ async function renderSortedGallery(photosSource) {
             return { ...p, hue: parseInt(hue) };
         }));
         
-        // Сортировка по спектру радуги: красный(0°) → фиолетовый(330°)
         allWithHue.sort((a, b) => ((a.hue + 330) % 360) - ((b.hue + 330) % 360));
         
-        // Рендерим ВСЕ фото (без заголовков!)
         gallery.innerHTML = '';
         allWithHue.forEach(photo => {
-            const isNoYear = getSortYear(photo) === null;
-            renderCard(photo, -1, isNoYear);
+            const isUnknown = !photo.tagYear || !/^\d{4}$/.test(String(photo.tagYear));
+            renderCard(photo, -1, isUnknown);
         });
-        
-        console.log(`✅ Сортировка по цвету: ${allWithHue.length} фото`);
-        return; // Выходим, дальше не идём
+        return;
     }
 
-    // === РЕНДЕР (только для режима ДАТЫ) ===
+    // === РЕЖИМ ДАТЫ (СТРОГО ПО ТЕГАМ) ===
     gallery.innerHTML = '';
-    
-    // 1. Сначала "Неизвестно" (ТОЛЬКО если есть фото без года)
-    if (photosWithoutYear.length > 0) {
-        console.log(`📁 Показываю "?" (${photosWithoutYear.length} фото без года)`);
-        const unknownHeader = document.createElement('div');
-        unknownHeader.className = 'year-header';
-        unknownHeader.textContent = '?';
-        gallery.appendChild(unknownHeader);
-        
-        photosWithoutYear.forEach(photo => {
-            renderCard(photo, -1, true); // true = без года
-        });
+
+    const groups = {};
+    const unknownPhotos = [];
+
+    photos.forEach(p => {
+        const tag = p.tagYear;
+        // Проверяем: есть тег И ровно 4 цифры
+        if (tag !== undefined && tag !== null && /^\d{4}$/.test(String(tag))) {
+            const year = String(tag);
+            if (!groups[year]) groups[year] = [];
+            groups[year].push(p);
+        } else {
+            unknownPhotos.push(p);
+        }
+    });
+
+    // Сортируем годы по убыванию (2026 -> 2025 -> ...)
+    const sortedYears = Object.keys(groups).sort((a, b) => b - a);
+
+    // 1. Рендерим группы с тегами
+    sortedYears.forEach(year => {
+        const header = document.createElement('div');
+        header.className = 'year-header';
+        header.textContent = year;
+        gallery.appendChild(header);
+
+        groups[year].forEach(photo => renderCard(photo, -1, false));
+    });
+
+    // 2. Рендерим блок "?" В САМОМ КОНЦЕ (только если есть фото без валидного тега)
+    if (unknownPhotos.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'year-header';
+        header.textContent = '?';
+        gallery.appendChild(header);
+
+        unknownPhotos.forEach(photo => renderCard(photo, -1, true));
     }
-    
-    // 2. Потом фото с годами (с группировкой) — ДЛЯ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
-    if (photosWithYear.length > 0) {
-        console.log(`📅 Показываю годы (${photosWithYear.length} фото с годом)`);
-        let lastYear = null;
-        
-        photosWithYear.forEach(photo => {
-            const year = getSortYear(photo).toString();
-            
-            // Показываем заголовок года, если он сменился
-            if (year !== lastYear) {
-                console.log(`  → Заголовок: ${year}`);
-                const header = document.createElement('div');
-                header.className = 'year-header';
-                header.textContent = year;
-                gallery.appendChild(header);
-                lastYear = year;
-            }
-            
-            renderCard(photo, -1, false);
-        });
-    }
-    
-    console.log(`✅ ${photosWithYear.length} с годом, ${photosWithoutYear.length} без года`);
+
+    console.log(`✅ Даты: ${sortedYears.length} групп, ${unknownPhotos.length} без тега`);
 }
 
 // === ЛЁГКИЙ АНАЛИЗ ЦВЕТА (10×10 пикселей, ~20мс на фото) ===
