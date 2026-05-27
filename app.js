@@ -399,16 +399,20 @@ async function syncJSON(changes, action, retries = 2) {
     try { current = JSON.parse(atob(data.content)); } catch(e) { current = []; }
     const sha = data.sha;
 
- if (action === 'add') {
+if (action === 'add') {
         current.push(...changes);
     } else if (action === 'delete') {
         current = current.filter(p => p.key !== changes[0].key);
     } else if (action === 'updateTag') {
         const target = changes[0];
         const idx = current.findIndex(p => p.key === target.key);
-        if (idx !== -1) current[idx].tagYear = target.tagYear;
+        if (idx !== -1) {
+            current[idx].tagYear = target.tagYear;
+            console.log('✅ Тег обновлён:', target.key, '→', target.tagYear);
+        } else {
+            console.warn('⚠️ Фото не найдено для обновления тега:', target.key);
+        }
     }
-
     const putRes = await fetch(url, {
         method: 'PUT',
         headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
@@ -771,44 +775,72 @@ window.addEventListener('load', () => {
 // === ЛОГИКА РЕДАКТИРОВАНИЯ ГОДА ===
 let currentEditKey = null;
 
-function openEditModal(key, exifDate, tagYear) {
+function openEditModal(key, photoDate, tagYear) {
     currentEditKey = key;
     const modal = document.getElementById('editModal');
     const input = document.getElementById('editYearInput');
     const msg = document.getElementById('editSuccessMsg');
-    msg.classList.remove('show');
-
-    // Приоритет: Тег > EXIF > Неизвестно
-    let val = 'Неизвестно';
-    if (tagYear) val = tagYear;
-    else if (exifDate && !isNaN(new Date(exifDate).getTime())) val = new Date(exifDate).getFullYear();
     
-    input.value = val === 'Неизвестно' ? '' : val;
-    modal.classList.add('active');
-}
-
-document.getElementById('cancelEditBtn').addEventListener('click', () => {
-    document.getElementById('editModal').classList.remove('active');
-});
-
-document.getElementById('saveEditBtn').addEventListener('click', async () => {
-    const input = document.getElementById('editYearInput');
-    const newYear = parseInt(input.value);
-    if (!currentEditKey || isNaN(newYear) || newYear < 1900 || newYear > 2100) {
-        alert('Введите корректный год (1900-2100)');
+    if (!modal || !input) {
+        console.error('❌ Модалка или input не найдены!');
         return;
     }
-
-    // Сохраняем тег в JSON
-    await syncJSON([{ key: currentEditKey, tagYear: newYear }], 'updateTag');
     
-    document.getElementById('editSuccessMsg').classList.add('show');
-    setTimeout(() => {
-        document.getElementById('editModal').classList.remove('active');
-        loadGallery(); // Перезагрузка для применения сортировки
-    }, 800);
-});
+    msg.classList.remove('show');
+    
+    // Приоритет: Тег > EXIF
+    let val = '';
+    if (tagYear) {
+        val = tagYear;
+    } else if (photoDate && !isNaN(new Date(photoDate).getTime())) {
+        val = new Date(photoDate).getFullYear();
+    }
+    
+    input.value = val;
+    modal.classList.add('active');
+    console.log('📝 Открыта модалка для:', key, 'год:', val);
+}
 
+// Отмена
+const cancelBtn = document.getElementById('cancelEditBtn');
+if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+        document.getElementById('editModal').classList.remove('active');
+        currentEditKey = null;
+    });
+}
+
+// Сохранение
+const saveBtn = document.getElementById('saveEditBtn');
+if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+        const input = document.getElementById('editYearInput');
+        const msg = document.getElementById('editSuccessMsg');
+        const newYear = parseInt(input.value);
+        
+        if (!currentEditKey || isNaN(newYear) || newYear < 1900 || newYear > 2100) {
+            alert('Введите корректный год (1900-2100)');
+            return;
+        }
+        
+        console.log('💾 Сохраняем тег:', currentEditKey, '→', newYear);
+        
+        try {
+            // Сохраняем тег в JSON (теперь он виден ВСЕМ пользователям)
+            await syncJSON([{ key: currentEditKey, tagYear: newYear }], 'updateTag');
+            
+            msg.classList.add('show');
+            setTimeout(() => {
+                document.getElementById('editModal').classList.remove('active');
+                currentEditKey = null;
+                loadGallery(); // Перезагрузка галереи
+            }, 800);
+        } catch (err) {
+            console.error('❌ Ошибка сохранения тега:', err);
+            alert('Не удалось сохранить тег');
+        }
+    });
+}
 
 
 
