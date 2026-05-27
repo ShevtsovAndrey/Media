@@ -326,6 +326,7 @@ filter: invert(1);
     .add-btn, .sort-btn {
         background: rgba(0, 0, 0, 0.05);
         border-color: rgba(0, 0, 0, 0.2);
+        color:#000000;
     }
     .add-btn:hover, .sort-btn:hover {
         background: rgba(0, 0, 0, 0.1);
