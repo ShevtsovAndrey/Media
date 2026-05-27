@@ -627,8 +627,9 @@ async function renderSortedGallery(photosSource) {
         return;
     }
 
-    // === РЕЖИМ ДАТЫ (ЖЁСТКАЯ ПРОВЕРКА ТЕГОВ) ===
-    gallery.innerHTML = '';
+ gallery.innerHTML = '';
+    gallery.classList.add('date-mode'); // Включаем snap-scroll
+    
     const groups = {};
     const unknown = [];
 
@@ -660,23 +661,46 @@ async function renderSortedGallery(photosSource) {
 
     const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
 
-    // 1. Группы с валидными тегами
+    // 1. Группы с валидными тегами (каждый год = отдельный блок)
     sortedYears.forEach(year => {
+        // Создаём секцию года
+        const section = document.createElement('div');
+        section.className = 'year-section';
+        
+        // Заголовок
         const header = document.createElement('div');
         header.className = 'year-header';
         header.textContent = year;
-        gallery.appendChild(header);
-        groups[year].forEach(photo => renderCard(photo, -1, false));
+        section.appendChild(header);
+        
+        // Мозаика
+        const grid = document.createElement('div');
+        grid.className = 'mosaic-grid';
+        
+        groups[year].forEach(photo => renderCard(photo, -1, false, grid));
+        
+        section.appendChild(grid);
+        gallery.appendChild(section);
     });
 
-    // 2. Группа "-" ВНИЗУ (только если есть фото без тега)
+    // 2. Группа "-" (если есть)
     if (unknown.length > 0) {
         console.log(`📁 Показываю "-" (${unknown.length} фото без тега)`);
+        
+        const section = document.createElement('div');
+        section.className = 'year-section';
+        
         const header = document.createElement('div');
         header.className = 'year-header';
         header.textContent = '-';
-        gallery.appendChild(header);
-        unknown.forEach(photo => renderCard(photo, -1, true));
+        section.appendChild(header);
+        
+        const grid = document.createElement('div');
+        grid.className = 'mosaic-grid';
+        unknown.forEach(photo => renderCard(photo, -1, true, grid));
+        
+        section.appendChild(grid);
+        gallery.appendChild(section);
     } else {
         console.log(`✅ Все ${photos.length} фото имеют валидные теги, "-" не показываю`);
     }
