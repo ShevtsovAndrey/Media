@@ -595,27 +595,49 @@ async function renderSortedGallery(photosSource) {
         }));
         withHue.sort((a, b) => ((a.hue + 330) % 360) - ((b.hue + 330) % 360));
         gallery.innerHTML = '';
-        withHue.forEach(p => renderCard(p, -1, !p.tagYear || !/^\d{4}$/.test(String(p.tagYear))));
+        withHue.forEach(p => {
+            // Проверяем валидность тега для isNoDate
+            const y = p.tagYear;
+            const valid = (y !== null && y !== undefined && typeof y === 'number' && y >= 1999 && y <= 2100);
+            renderCard(p, -1, !valid);
+        });
         return;
     }
 
-    // === РЕЖИМ ДАТЫ (СТРОГО ПО ТЕГАМ) ===
+    // === РЕЖИМ ДАТЫ (ЖЁСТКАЯ ПРОВЕРКА ТЕГОВ) ===
     gallery.innerHTML = '';
     const groups = {};
     const unknown = [];
 
     photos.forEach(p => {
         const y = p.tagYear;
-        if (y !== null && y !== undefined && /^\d{4}$/.test(String(y))) {
-            const year = String(y);
+        
+        // === ЖЁСТКАЯ ВАЛИДАЦИЯ: только число 1999-2100 ===
+        let isValid = false;
+        if (typeof y === 'number' && !isNaN(y) && y >= 1999 && y <= 2100) {
+            isValid = true;
+        }
+        // Допускаем строку, если она парсится в валидный год
+        else if (typeof y === 'string') {
+            const num = parseInt(y.trim(), 10);
+            if (!isNaN(num) && num >= 1999 && num <= 2100) {
+                isValid = true;
+                p.tagYear = num; // Нормализуем к числу
+            }
+        }
+        
+        if (isValid) {
+            const year = String(p.tagYear);
             if (!groups[year]) groups[year] = [];
             groups[year].push(p);
         } else {
+            // Логируем только если действительно есть фото без тега
+            console.log(`⚠️ Фото без валидного тега: ${p.key?.substring(0,40)}..., tagYear:`, y);
             unknown.push(p);
         }
     });
 
-    const sortedYears = Object.keys(groups).sort((a, b) => b - a);
+    const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
 
     // 1. Группы с валидными тегами (от нового к старому)
     sortedYears.forEach(year => {
@@ -626,17 +648,19 @@ async function renderSortedGallery(photosSource) {
         groups[year].forEach(photo => renderCard(photo, -1, false));
     });
 
-    // 2. Группа "?" ВНИЗУ (только если есть фото без тега)
+    // 2. Группа "-" ВНИЗУ (ТОЛЬКО если действительно есть фото без тега)
     if (unknown.length > 0) {
+        console.log(`📁 Показываю "-" (${unknown.length} фото без тега)`);
         const header = document.createElement('div');
         header.className = 'year-header';
         header.textContent = '-';
         gallery.appendChild(header);
         unknown.forEach(photo => renderCard(photo, -1, true));
+    } else {
+        console.log(`✅ Все ${photos.length} фото имеют валидные теги, "-" не показываю`);
     }
-
-    console.log(`✅ ${sortedYears.length} групп по тегам, ${unknown.length} без тега`);
 }
+
 // === ЛЁГКИЙ АНАЛИЗ ЦВЕТА (10×10 пикселей, ~20мс на фото) ===
 function getPhotoHueSimple(imgUrl) {
     return new Promise(resolve => {
