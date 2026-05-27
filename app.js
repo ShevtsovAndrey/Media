@@ -320,16 +320,21 @@ if (isAdmin) {
 
 
     if (isAdmin) {
-        // Кнопка удаления (твоя старая логика)
-        card.querySelector('.delete-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            deletePhoto(photo.key, photo.title, card);
-        });
-        // Кнопка редактирования
-        card.querySelector('.edit-meta-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            openEditModal(photo.key, photo.date, photo.tagYear);
-        });
+        const deleteBtn = card.querySelector('.delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deletePhoto(photo.key, photo.title, card);
+            });
+        }
+        
+        const editBtn = card.querySelector('.edit-meta-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEditModal(photo.key, photo.date, photo.tagYear);
+            });
+        }
     }
 
     document.getElementById('gallery').appendChild(card);
