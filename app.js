@@ -197,7 +197,7 @@ async function loadGallery() {
 
         // 5. Рендерим галерею из синхронизированного списка
 gallery.innerHTML = '';
-
+window.galleryPhotos = currentPhotos;
 if (sortMode !== 'default') {
     renderSortedGallery(currentPhotos); // ← Передаём массив!
 } else {
@@ -220,8 +220,10 @@ if (sortMode !== 'default') {
             if (fallbackRes.ok) {
                 const data = await fallbackRes.json();
                 const photos = JSON.parse(atob(data.content));
+                window.galleryPhotos = photos;
                 gallery.innerHTML = '';
                 photos.forEach((photo, i) => renderCard(photo, i));
+                
             } else {
                 gallery.innerHTML = '<div class="loading">Ошибка загрузки. Проверь интернет.</div>';
             }
