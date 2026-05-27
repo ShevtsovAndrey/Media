@@ -169,7 +169,14 @@ async function loadGallery() {
 
         // 3. Находим файлы в Яндексе, которых нет в JSON
         const missingInJson = s3Files
-            .filter(f => !jsonKeys.has(f.Key))
+            .filter(f => {
+                // Фильтруем битые файлы с именем 'undefined'
+                if (!f.Key || f.Key === 'undefined' || f.Key.includes('undefined')) {
+                    console.warn(`🗑️ Пропускаем битый файл: ${f.Key}`);
+                    return false;
+                }
+                return !jsonKeys.has(f.Key);
+            })
             .map(f => {
                 const key = f.Key;
                 const title = key.split('/').pop().replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
@@ -570,13 +577,28 @@ async function getPhotoHue(key, imgUrl) {
     });
 }
 
-// === СОРТИРОВКА (2 режима: дата и цвет) ===
+//СОРТИРОВКА
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Сортировка...</div>';
     await new Promise(r => setTimeout(r, 30));
 
     let photos = Array.isArray(photosSource) ? [...photosSource] : [];
+    
+    // === ФИЛЬТР: убираем фото с невалидными ключами (фантомные записи) ===
+    const beforeFilter = photos.length;
+    photos = photos.filter(p => {
+        // Проверяем, что ключ существует, не пустой и не "undefined"
+        if (!p.key || p.key === 'undefined' || p.key.trim() === '' || p.key === 'null') {
+            console.warn(`🗑️ Исключено фото с битым ключом:`, p);
+            return false;
+        }
+        return true;
+    });
+    if (beforeFilter !== photos.length) {
+        console.log(`✅ Отфильтровано: ${beforeFilter} → ${photos.length} фото`);
+    }
+    
     if (photos.length === 0) {
         gallery.innerHTML = '<div class="loading">Нет фото</div>';
         return;
@@ -596,7 +618,6 @@ async function renderSortedGallery(photosSource) {
         withHue.sort((a, b) => ((a.hue + 330) % 360) - ((b.hue + 330) % 360));
         gallery.innerHTML = '';
         withHue.forEach(p => {
-            // Проверяем валидность тега для isNoDate
             const y = p.tagYear;
             const valid = (y !== null && y !== undefined && typeof y === 'number' && y >= 1999 && y <= 2100);
             renderCard(p, -1, !valid);
@@ -617,12 +638,11 @@ async function renderSortedGallery(photosSource) {
         if (typeof y === 'number' && !isNaN(y) && y >= 1999 && y <= 2100) {
             isValid = true;
         }
-        // Допускаем строку, если она парсится в валидный год
         else if (typeof y === 'string') {
             const num = parseInt(y.trim(), 10);
             if (!isNaN(num) && num >= 1999 && num <= 2100) {
                 isValid = true;
-                p.tagYear = num; // Нормализуем к числу
+                p.tagYear = num;
             }
         }
         
@@ -631,7 +651,6 @@ async function renderSortedGallery(photosSource) {
             if (!groups[year]) groups[year] = [];
             groups[year].push(p);
         } else {
-            // Логируем только если действительно есть фото без тега
             console.log(`⚠️ Фото без валидного тега: ${p.key?.substring(0,40)}..., tagYear:`, y);
             unknown.push(p);
         }
@@ -639,7 +658,7 @@ async function renderSortedGallery(photosSource) {
 
     const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
 
-    // 1. Группы с валидными тегами (от нового к старому)
+    // 1. Группы с валидными тегами
     sortedYears.forEach(year => {
         const header = document.createElement('div');
         header.className = 'year-header';
@@ -648,7 +667,7 @@ async function renderSortedGallery(photosSource) {
         groups[year].forEach(photo => renderCard(photo, -1, false));
     });
 
-    // 2. Группа "-" ВНИЗУ (ТОЛЬКО если действительно есть фото без тега)
+    // 2. Группа "-" ВНИЗУ (только если есть фото без тега)
     if (unknown.length > 0) {
         console.log(`📁 Показываю "-" (${unknown.length} фото без тега)`);
         const header = document.createElement('div');
