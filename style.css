@@ -4,7 +4,7 @@
     box-sizing: border-box; 
 }
 body { 
-    background: #0a0a0a; 
+    background: #000000; 
     font-family: system-ui, -apple-system, sans-serif; 
     overflow-x: hidden; 
 }
@@ -28,7 +28,7 @@ body {
     display: block; 
     width: 100%; 
     height: auto; 
-    /*max-height: 60vh;*/
+    max-height: 60vh;
     object-fit: contain; transition: transform 0.3s ease;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -80,6 +80,39 @@ body {
     transform: scale(1.1); 
 }
 
+.add-date-btn {
+    width: 24px; 
+    height: 24px; 
+    background: rgba(100, 200, 255, 0.95); 
+    color: #fff;
+    border: none; 
+    border-radius: 50%; 
+    font-size: 18px; 
+    font-weight: bold;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    margin-left: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4); 
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+.add-date-btn:hover { 
+    transform: scale(1.1); 
+    background: rgba(100, 200, 255, 1);
+}
+
+/* Размытие для фото без дат */
+.photo-card.no-date {
+    opacity: 0.7;
+}
+.photo-card.no-date:hover {
+    opacity: 1;
+}
+
+
+
+
 .add-btn {
     position: fixed; 
     bottom: 24px; 
@@ -118,7 +151,6 @@ body {
     transform: none;
     box-shadow: none;
 }
-
 
 .sort-btn {
 position: fixed; 
@@ -247,32 +279,3 @@ height: 48px;
     color: #ff6464;
 }
 
-.add-date-btn {
-    width: 24px; 
-    height: 24px; 
-    background: rgba(100, 200, 255, 0.95); 
-    color: #fff;
-    border: none; 
-    border-radius: 50%; 
-    font-size: 18px; 
-    font-weight: bold;
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    margin-left: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4); 
-    transition: transform 0.2s;
-    cursor: pointer;
-}
-.add-date-btn:hover { 
-    transform: scale(1.1); 
-    background: rgba(100, 200, 255, 1);
-}
-
-/* Размытие для фото без дат */
-.photo-card.no-date {
-    opacity: 0.7;
-}
-.photo-card.no-date:hover {
-    opacity: 1;
-}
