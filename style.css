@@ -24,7 +24,6 @@ body {
     flex: 0 1 auto; 
     max-width: 50%; 
     min-width: 20vw;
-    background: #000000; 
     overflow: hidden; 
     border-radius: 2px;
     padding: 0.2vw;
@@ -302,9 +301,13 @@ filter: invert(1);
     height: 50%;
 }
 
+
+
+
+/*СВЕТЛАЯ ТЕМА*/
 @media (prefers-color-scheme: light) {
     body {
-        background: #e0e0e0;
+        background: #ffffff;
         color: #000000;
     }
 
@@ -312,11 +315,6 @@ filter: invert(1);
     .year-header {
         color: #000000;
         text-shadow: none;
-    }
-
-    /* Карточки фото */
-    .photo-card {
-        background: #ffffff;
     }
 
     /* Оверлей при наведении */
