@@ -169,7 +169,7 @@ height: 48px;
     display: flex; 
     align-items: center; 
     justify-content: center;
-    z-index: 999;
+    z-index: 99;
     opacity: 0; 
     pointer-events: none;
     transition: opacity 0.2s ease;
@@ -185,6 +185,7 @@ height: 48px;
     box-shadow: none; 
     border: 2px;
     user-select: none;
+    z-index: 100;
 }
 
 @media (max-width: 768px) {
@@ -299,4 +300,78 @@ filter: invert(1);
 .edit-meta-btn img {
     width: 50%;
     height: 50%;
+}
+
+@media (prefers-color-scheme: light) {
+    body {
+        background: #e0e0e0;
+        color: #000000;
+    }
+
+    /* Заголовки годов */
+    .year-header {
+        color: #000000;
+        text-shadow: none;
+    }
+
+    /* Карточки фото */
+    .photo-card {
+        background: #ffffff;
+    }
+
+    /* Оверлей при наведении */
+    .delete-overlay {
+        background: rgba(0,0,0,0.1);
+    }
+
+    /* Плавающие кнопки (+ и сортировка) */
+    .add-btn, .sort-btn {
+        background: rgba(0, 0, 0, 0.05);
+        border-color: rgba(0, 0, 0, 0.2);
+    }
+    .add-btn:hover, .sort-btn:hover {
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    /* Иконки: УБИРАЕМ инверсию, так как они теперь на светлом фоне */
+    .sort-btn img,
+    .edit-meta-btn img,
+    .delete-btn img,
+    .add-btn .loading-icon {
+        filter: invert(0) !important;
+    }
+
+    /* Кнопки удаления и редактирования */
+    .delete-btn {
+        background: rgba(0,0,0,0.1);
+        color: #000000;
+    }
+    .edit-meta-btn {
+        background: rgba(46, 204, 113, 0.15);
+        border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+
+    /* Лайтбокс */
+    .lightbox {
+        background: rgba(255,255,255,0.85);
+    }
+
+    /* Drag & Drop оверлей */
+    .drag-overlay {
+        background: rgba(255, 255, 255, 0.75);
+        color: #000000;
+        text-shadow: none;
+    }
+
+    /* Текст загрузки */
+    .loading {
+        color: #333333;
+    }
+
+    /* Группа "-" (неизвестные) */
+    .year-header.unknown-header {
+        background: rgba(255, 100, 100, 0.15);
+        color: #cc0000;
+        border-left-color: #cc0000;
+    }
 }
