@@ -270,57 +270,96 @@ filter: invert(1);
 
                                                     /* === МОЗАИКА ===*/
 
-                                                    
+     /* === SCROLL SNAP + МОЗАИКА (все фото на экране + оффсет) === */
 #gallery.date-mode {
-    scroll-snap-type: y mandatory; /* Жёсткое прилипание */
+    scroll-snap-type: y mandatory;
     height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     padding: 0;
-    display: block !important; /* Отключаем flex для режима даты */
+    display: block !important;
+    scroll-padding-top: 0;
 }
 
 .year-section {
     scroll-snap-align: start;
-    min-height: 100vh; /* Год на весь экран */
-    padding: 20px 12px 60px;
+    height: 100vh; /* Строго высота экрана */
+    padding: 20px 12px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-bottom: 10vh; /* ОФФСЕТ: следующий блок виден на 10% */
+    position: relative;
 }
 
-/* Мозаика: переопределяем стили карточек */
+/* Заголовок года занимает меньше места */
+.year-header {
+    margin: 2vh 0 3vh;
+    font-size: clamp(30px, 15vw, 80px);
+    flex-shrink: 0; /* Не сжимается */
+}
+
+/* Мозаика */
 .mosaic-grid {
     column-count: 3;
     column-gap: 12px;
     width: 100%;
     max-width: 1800px;
+    max-height: 75vh; /* Ограничение высоты сетки */
+    overflow: hidden; /* Обрезаем если не влезает */
 }
 
 .mosaic-grid .photo-card {
     break-inside: avoid;
-    display: inline-block !important; /* Фикс для column-layout */
-    width: 100% !important; /* Отменяем 50% из базового стиля */
+    display: inline-block !important;
+    width: 100% !important;
     max-width: none !important;
     min-width: auto !important;
-    flex: none !important; /* Отключаем flex-свойства */
-    margin: 0 0 12px 0;
+    flex: none !important;
+    margin: 0 0 8px 0;
 }
 
+/* УМЕНЬШАЕМ ФОТО чтобы влезали */
 .mosaic-grid .photo-card img {
-    max-height: none; /* Разрешаем любую высоту в мозаике */
+    max-height: calc(75vh / 3); /* Примерно 3 ряда на экран */
+    object-fit: contain;
+    width: 100%;
 }
 
 /* Адаптивность */
-@media (max-width: 1024px) { .mosaic-grid { column-count: 2; } }
-@media (max-width: 600px)  { .mosaic-grid { column-count: 1; } }
+@media (max-width: 1024px) { 
+    .mosaic-grid { column-count: 2; }
+    .mosaic-grid .photo-card img { max-height: calc(75vh / 2); }
+}
+@media (max-width: 600px) { 
+    .mosaic-grid { column-count: 1; }
+    .mosaic-grid .photo-card img { max-height: calc(75vh / 1.5); }
+    .year-header { font-size: clamp(25px, 10vw, 50px); }
+}
 
 /* Скрываем карточки вне мозаики в режиме даты */
 #gallery.date-mode > .photo-card { display: none; }
 
+/* Индикатор прокрутки (опционально) */
+.year-section::after {
+    content: '↓';
+    position: absolute;
+    bottom: 2vh;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    opacity: 0.5;
+    animation: bounce 2s infinite;
+    pointer-events: none;
+}
 
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+    40% { transform: translateX(-50%) translateY(-10px); }
+    60% { transform: translateX(-50%) translateY(-5px); }
+}
 
 
 
