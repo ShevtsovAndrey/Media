@@ -762,14 +762,15 @@ function getPhotoHueSimple(imgUrl) {
 
 
 // === СОРТИРОВКА: СВЕТЛЫЕ→ТЁМНЫЕ + ЦВЕТ (HUE) ===
+// === СОРТИРОВКА: ЦВЕТ + СЛОЖНОСТЬ ===
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
-    gallery.innerHTML = '<div class="loading">Сортировка...</div>';
+    gallery.innerHTML = '<div class="loading">Анализ и сортировка...</div>';
     await new Promise(r => setTimeout(r, 30));
 
     let photos = Array.isArray(photosSource) ? [...photosSource] : [];
     
-    // Фильтр битых ключей
+    // Фильтр
     photos = photos.filter(p => {
         if (!p.key || p.key === 'undefined' || p.key.trim() === '' || p.key === 'null') {
             return false;
@@ -782,19 +783,18 @@ async function renderSortedGallery(photosSource) {
         return;
     }
 
-    // === ВЫЧИСЛЯЕМ HSL ДЛЯ ВСЕХ ФОТО ===
-    console.log('🎨 Вычисляем HSL для', photos.length, 'фото...');
-    const photosWithHSL = await Promise.all(photos.map(async (p, index) => {
-        const hsl = await getPhotoHSL(`${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`);
-        console.log(`[${index + 1}/${photos.length}] ${p.key.substring(0, 30)}... → H:${hsl.h}° S:${hsl.s}% L:${hsl.l}%`);
-        return { ...p, hsl };
+    // === АНАЛИЗ ВСЕХ ФОТО ===
+    console.log('🎨 Анализирую', photos.length, 'фото...');
+    const photosWithAnalysis = await Promise.all(photos.map(async (p, index) => {
+        const analysis = await analyzePhoto(`${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`);
+        return { ...p, analysis };
     }));
 
     // === ГРУППИРОВКА ПО ГОДАМ ===
     const groups = {};
     const unknown = [];
 
-    photosWithHSL.forEach(p => {
+    photosWithAnalysis.forEach(p => {
         const y = p.tagYear;
         
         let isValid = false;
@@ -818,19 +818,29 @@ async function renderSortedGallery(photosSource) {
         }
     });
 
-    // === СОРТИРОВКА ВНУТРИ КАЖДОГО ГОДА ===
+    // === СОРТИРОВКА ВНУТРИ ГОДА ===
     Object.keys(groups).forEach(year => {
         groups[year].sort((a, b) => {
-            // 1. Главный приоритет: Lightness (светлые → тёмные)
-            const lightnessDiff = b.hsl.l - a.hsl.l;
+            // 1. Сначала по цвету (холодные → тёплые)
+            // Сдвиг: синий (240°) → 0, красный (0°) → 120
+            const aHue = (a.analysis.hue + 120) % 360;
+            const bHue = (b.analysis.hue + 120) % 360;
             
-            // Если разница в яркости больше 15% — сортируем по яркости
-            if (Math.abs(lightnessDiff) > 15) {
-                return lightnessDiff;
+            const hueDiff = aHue - bHue;
+            
+            // 2. Если цвета похожи (в пределах 60°), сортируем по "простоте"
+            if (Math.abs(hueDiff) < 60) {
+                // Простые и светлые → сложные и тёмные
+                const scoreDiff = b.analysis.simplicityScore - a.analysis.simplicityScore;
+                
+                // Если разница в score > 0.1, используем её
+                if (Math.abs(scoreDiff) > 0.1) {
+                    return scoreDiff;
+                }
             }
             
-            // 2. Если яркость похожа — сортируем по цвету (Hue)
-            return a.hsl.h - b.hsl.h;
+            // Иначе по цвету
+            return hueDiff;
         });
     });
 
@@ -877,60 +887,143 @@ async function renderSortedGallery(photosSource) {
     
     console.log('✅ Сортировка завершена');
 }
-// === КАЧЕСТВЕННЫЙ АНАЛИЗ HSL (100×100 пикселей, центр изображения) ===
-function getPhotoHSL(imgUrl) {
+
+// === КОМПЛЕКСНЫЙ АНАЛИЗ ФОТО ===
+function analyzePhoto(imgUrl) {
     return new Promise(resolve => {
         const img = new Image();
         img.crossOrigin = "Anonymous";
+        
         img.onload = () => {
-            const c = document.createElement('canvas');
-            const ctx = c.getContext('2d');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
             
-            // Берём центральный регион 100×100 для точности
-            const size = Math.min(img.width, img.height, 200);
-            const startX = (img.width - size) / 2;
-            const startY = (img.height - size) / 2;
+            // Уменьшаем до 100×100 для анализа
+            canvas.width = 100;
+            canvas.height = 100;
+            ctx.drawImage(img, 0, 0, 100, 100);
             
-            c.width = 100;
-            c.height = 100;
-            ctx.drawImage(img, startX, startY, size, size, 0, 0, 100, 100);
+            const imageData = ctx.getImageData(0, 0, 100, 100);
+            const data = imageData.data;
             
-            const d = ctx.getImageData(0, 0, 100, 100).data;
+            // === 1. Считаем статистику ===
+            let totalR = 0, totalG = 0, totalB = 0;
+            let totalL = 0; // Яркость
+            let totalS = 0; // Насыщенность
+            let brightnessSum = 0;
+            let darkPixels = 0;
+            let lightPixels = 0;
+            let colorBins = new Array(12).fill(0); // 12 цветовых бинов (по 30°)
             
-            // Считаем средний RGB
-            let r = 0, g = 0, b = 0;
-            let count = 0;
+            // Для вычисления контраста/деталей
+            let pixels = [];
             
-            for (let i = 0; i < d.length; i += 4) {
-                // Пропускаем очень тёмные и очень светлые пиксели (шум)
-                const brightness = (d[i] + d[i+1] + d[i+2]) / 3;
-                if (brightness > 10 && brightness < 245) {
-                    r += d[i];
-                    g += d[i+1];
-                    b += d[i+2];
-                    count++;
-                }
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                
+                // Яркость пикселя
+                const brightness = (r + g + b) / 3;
+                brightnessSum += brightness;
+                
+                // Считаем тёмные и светлые пиксели
+                if (brightness < 50) darkPixels++;
+                if (brightness > 200) lightPixels++;
+                
+                // RGB → HSL
+                const hsl = rgbToHSL(r, g, b);
+                totalL += hsl.l;
+                totalS += hsl.s;
+                
+                // Цветовой бин (0-11)
+                const bin = Math.floor(hsl.h / 30);
+                colorBins[bin]++;
+                
+                // Для контраста
+                pixels.push(brightness);
             }
             
-            if (count === 0) {
-                // Если всё чёрное или белое — берём всё
-                for (let i = 0; i < d.length; i += 4) {
-                    r += d[i];
-                    g += d[i+1];
-                    b += d[i+2];
-                    count++;
-                }
+            const pixelCount = data.length / 4;
+            
+            // === 2. Вычисляем метрики ===
+            
+            // Средняя яркость (0-100)
+            const avgLightness = totalL / pixelCount;
+            
+            // Средняя насыщенность (0-100)
+            const avgSaturation = totalS / pixelCount;
+            
+            // Процент тёмных пикселей
+            const darkRatio = darkPixels / pixelCount;
+            
+            // Процент светлых пикселей
+            const lightRatio = lightPixels / pixelCount;
+            
+            // Доминирующий цвет (бин с максимумом)
+            const dominantBin = colorBins.indexOf(Math.max(...colorBins));
+            const dominantHue = dominantBin * 30 + 15; // Центр бина
+            
+            // === 3. Количество цветов (разнообразие) ===
+            // Считаем сколько бинов заполнено > 5%
+            const filledBins = colorBins.filter(count => count > pixelCount * 0.05).length;
+            const colorDiversity = filledBins / 12; // 0-1
+            
+            // === 4. Контраст/детализация (стандартное отклонение) ===
+            const meanBrightness = brightnessSum / pixelCount;
+            let variance = 0;
+            for (const p of pixels) {
+                variance += Math.pow(p - meanBrightness, 2);
             }
+            const stdDev = Math.sqrt(variance / pixelCount);
+            const complexity = stdDev / 128; // Нормализуем (max stdDev = 128)
             
-            r /= count;
-            g /= count;
-            b /= count;
+            // === 5. Комплексный score ===
+            // Чем выше score, тем "проще" и "светлее" фото
+            const simplicityScore = (
+                (1 - colorDiversity) * 0.3 +      // Меньше цветов = лучше
+                (1 - avgSaturation / 100) * 0.25 + // Меньше насыщенности = лучше
+                (1 - complexity) * 0.2 +           // Меньше деталей = лучше
+                (lightRatio) * 0.15 +              // Больше светлого = лучше
+                (1 - darkRatio) * 0.1              // Меньше тёмного = лучше
+            );
             
-            // RGB → HSL
-            const hsl = rgbToHSL(r, g, b);
-            resolve(hsl);
+            const result = {
+                hue: dominantHue,                    // 0-360
+                lightness: avgLightness,             // 0-100
+                saturation: avgSaturation,           // 0-100
+                colorDiversity: colorDiversity,      // 0-1
+                complexity: complexity,              // 0-1
+                darkRatio: darkRatio,                // 0-1
+                lightRatio: lightRatio,              // 0-1
+                simplicityScore: simplicityScore,    // 0-1 (чем выше, тем "проще")
+                
+                // Для отладки
+                debug: {
+                    filledBins,
+                    stdDev: Math.round(stdDev)
+                }
+            };
+            
+            console.log(`📊 ${imgUrl.split('/').pop().substring(0, 25)}... 
+               H:${Math.round(result.hue)}° L:${Math.round(result.lightness)} S:${Math.round(result.saturation)} 
+               Diversity:${result.colorDiversity.toFixed(2)} Complexity:${result.complexity.toFixed(2)} 
+               Score:${result.simplicityScore.toFixed(2)}`);
+            
+            resolve(result);
         };
-        img.onerror = () => resolve({ h: 0, s: 0, l: 50 }); // Fallback
+        
+        img.onerror = () => {
+            console.error('❌ Ошибка анализа:', imgUrl);
+            resolve({
+                hue: 0, lightness: 50, saturation: 50,
+                colorDiversity: 0.5, complexity: 0.5,
+                darkRatio: 0.5, lightRatio: 0.5,
+                simplicityScore: 0.5,
+                debug: { filledBins: 0, stdDev: 0 }
+            });
+        };
+        
         img.src = imgUrl;
     });
 }
