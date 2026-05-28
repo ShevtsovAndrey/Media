@@ -807,115 +807,99 @@ window.addEventListener('load', () => {
 
 
 // === ЗАГЛАВНЫЙ БЛОК С ПРОГРЕСС БАРОМ ===
-const heroSection = document.getElementById('hero-section');
-const progressBar = document.getElementById('heroProgressBar');
+let heroSection, progressBar;
 let heroVisible = true;
 let isAnimating = false;
 let isReady = false;
 let galleryLoaded = false;
 let progressValue = 0;
+let heroDismissed = false;
 
-// Проверяем, был ли уже скрыт герой в этой сессии
-let heroDismissed = sessionStorage.getItem('heroDismissed') === 'true';
+// Инициализация (после DOM)
+document.addEventListener('DOMContentLoaded', () => {
+    heroSection = document.getElementById('hero-section');
+    progressBar = document.getElementById('heroProgressBar');
+    
+    // Проверяем сессию
+    heroDismissed = sessionStorage.getItem('heroDismissed') === 'true';
+    
+    if (heroDismissed && heroSection) {
+        heroSection.style.display = 'none';
+        heroVisible = false;
+        document.body.classList.add('hero-hidden');
+    } else if (heroSection) {
+        document.body.classList.remove('hero-hidden');
+    }
+});
 
-// Если уже скрыт — сразу убираем
-if (heroDismissed && heroSection) {
-    heroSection.style.display = 'none';
-    heroVisible = false;
-    document.body.classList.add('hero-hidden');
-}
-
-// Анимация прогресс бара
+// Анимация прогресса
 function animateProgress() {
     if (progressValue < 100) {
         progressValue += 2;
-        if (progressBar) {
-            progressBar.style.width = progressValue + '%';
-        }
+        if (progressBar) progressBar.style.width = progressValue + '%';
         setTimeout(animateProgress, 50);
     } else {
         checkReady();
     }
 }
 
-// Проверяем готовность
+// Проверка готовности
 function checkReady() {
-    if (galleryLoaded && progressValue >= 100 && !heroDismissed) {
+    if (galleryLoaded && progressValue >= 100 && !heroDismissed && heroSection) {
         isReady = true;
-        if (heroSection) {
-            heroSection.classList.add('ready');
-        }
+        heroSection.classList.add('ready');
         console.log('✅ Hero ready! Scroll up to enter');
     }
 }
 
-// Запускаем прогресс при загрузке
+// Запуск прогресса после полной загрузки
 window.addEventListener('load', () => {
     if (!heroDismissed) {
-        setTimeout(animateProgress, 500);
+        setTimeout(animateProgress, 300);
     }
 });
 
-// Wheel event для десктопа
+// Wheel event (десктоп)
 window.addEventListener('wheel', (e) => {
-    if (isAnimating || heroDismissed) return;
+    if (isAnimating || heroDismissed || !isReady) return;
     
-    // Скролл вверх (скрываем героя)
     if (e.deltaY < -50 && heroVisible) {
         e.preventDefault();
-        isAnimating = true;
-        heroVisible = false;
-        heroDismissed = true;
-        
-        // Сохраняем в сессии
-        sessionStorage.setItem('heroDismissed', 'true');
-        
-        heroSection.classList.add('hidden');
-        document.body.classList.add('hero-hidden');
-        
-        setTimeout(() => {
-            isAnimating = false;
-            heroSection.style.display = 'none';
-        }, 600);
+        dismissHero();
     }
-    // Скролл вниз — НЕ возвращаем героя, если он уже был скрыт
 }, { passive: false });
 
-// Touch события для мобильных
+// Touch events (мобильные)
 let touchStartY = 0;
-
 window.addEventListener('touchstart', (e) => {
     touchStartY = e.touches[0].clientY;
 }, { passive: true });
 
 window.addEventListener('touchend', (e) => {
-    if (isAnimating || heroDismissed) return;
+    if (isAnimating || heroDismissed || !isReady) return;
     
-    const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchStartY - touchEndY;
-    
-    // Свайп вверх (скрываем)
+    const diff = touchStartY - e.changedTouches[0].clientY;
     if (diff < -100 && heroVisible) {
-        isAnimating = true;
-        heroVisible = false;
-        heroDismissed = true;
-        
-        sessionStorage.setItem('heroDismissed', 'true');
-        
-        heroSection.classList.add('hidden');
-        document.body.classList.add('hero-hidden');
-        heroSection.style.display = 'none';
-        
-        setTimeout(() => {
-            isAnimating = false;
-        }, 600);
+        dismissHero();
     }
-    // Свайп вниз — НЕ возвращаем, если уже скрыт
 }, { passive: false });
 
-// Инициализация
-if (heroSection && !heroDismissed) {
-    document.body.style.overflow = 'hidden';
+// Функция скрытия героя
+function dismissHero() {
+    if (!heroSection) return;
+    
+    isAnimating = true;
+    heroVisible = false;
+    heroDismissed = true;
+    
+    sessionStorage.setItem('heroDismissed', 'true');
+    heroSection.classList.add('hidden');
+    document.body.classList.add('hero-hidden');
+    
+    setTimeout(() => {
+        heroSection.style.display = 'none';
+        isAnimating = false;
+    }, 600);
 }
 
 
