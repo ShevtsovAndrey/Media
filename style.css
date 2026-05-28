@@ -17,11 +17,6 @@
     padding: 0; 
     box-sizing: border-box; 
 }
-body { 
-    background: var(--bg); 
-    font-family: system-ui, -apple-system, sans-serif; 
-    overflow-x: hidden; 
-}
 
 
 
@@ -139,6 +134,18 @@ body {
     .hero-content { padding: 15vh 8vw; }
     .hero-logo { max-width: 90%; max-height: 70vh; }
 }
+
+
+
+
+
+
+body { 
+    background: var(--bg); 
+    font-family: system-ui, -apple-system, sans-serif; 
+    overflow-x: hidden; 
+}
+
 
 
 
@@ -397,6 +404,12 @@ filter: invert(1);
 
 
 @media (prefers-color-scheme: light) {
+
+    .hero-loader img,
+    .hero-arrow img{
+        filter: invert(0);
+    }
+    
     body {
         background: var(--bg-light);
         color: #000000;
