@@ -341,7 +341,7 @@ filter: invert(1);
 
 
 
-/* === МОЗАИКА — IPHONE (ФИНАЛЬНАЯ ВЕРСИЯ) === */
+/* === МОЗАИКА — ФИНАЛЬНАЯ ВЕРСИЯ === */
 
 #gallery.date-mode {
     height: 100vh;
@@ -363,6 +363,7 @@ filter: invert(1);
     box-sizing: border-box;
 }
 
+/* === ЗАГОЛОВОК === */
 .year-section .year-header {
     margin: 0 !important;
     padding: 0 !important;
@@ -378,6 +379,7 @@ filter: invert(1);
     text-align: center;
 }
 
+/* === МОЗАИКА (по умолчанию 2 колонки) === */
 .mosaic-grid {
     column-count: 2;
     column-gap: 0;
@@ -385,6 +387,29 @@ filter: invert(1);
     line-height: 0;
 }
 
+/* Если фото ОДНО — на весь экран */
+.mosaic-grid:has(.photo-card:only-child) {
+    column-count: 1;
+}
+.mosaic-grid:has(.photo-card:only-child) .photo-card {
+    max-height: 60vh; /* Ограничение чтобы фото не было гигантским */
+}
+.mosaic-grid:has(.photo-card:only-child) .photo-card img {
+    max-height: 60vh;
+}
+
+/* Если фото ДВА — друг под другом, полная ширина */
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) {
+    column-count: 1;
+}
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card {
+    max-height: 40vh; /* Ограничение высоты */
+}
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img {
+    max-height: 40vh;
+}
+
+/* Карточки */
 .mosaic-grid .photo-card {
     break-inside: avoid !important;
     display: block !important;
@@ -407,6 +432,69 @@ filter: invert(1);
     object-fit: contain;
     max-height: none !important;
     line-height: 0;
+}
+
+/* === ДЕСКТОП: 4 КОЛОНКИ (COLUMNS) === */
+@media (min-width: 1024px) {
+    .mosaic-grid {
+        column-count: 4;
+        column-gap: 0;
+        grid-template-columns: none;
+        grid-auto-rows: auto;
+    }
+    
+    .mosaic-grid .photo-card {
+        break-inside: avoid !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    /* 1 фото — на весь блок (влезает по высоте и ширине) */
+    .mosaic-grid:has(.photo-card:only-child) {
+        column-count: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 78vh; /* 100vh - 20vh заголовок - 2vh отступы */
+    }
+    .mosaic-grid:has(.photo-card:only-child) .photo-card {
+        max-height: 78vh;
+        max-width: 100%;
+        width: auto;
+    }
+    .mosaic-grid:has(.photo-card:only-child) .photo-card img {
+        max-height: 78vh;
+        max-width: 100%;
+        width: auto;
+        height: auto;
+    }
+    
+    /* 2 фото — друг под другом, каждое занимает половину доступного места */
+    .mosaic-grid:has(.photo-card:nth-child(2):last-child) {
+        column-count: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+        min-height: 78vh;
+    }
+    .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card {
+        max-height: 38vh; /* Половина от 78vh минус gap */
+        max-width: 100%;
+        width: auto;
+        margin: 0 auto;
+    }
+    .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img {
+        max-height: 38vh;
+        max-width: 100%;
+        width: auto;
+        height: auto;
+    }
+    
+    /* 3+ фото — 4 колонки как на мобильных, но шире */
+    .mosaic-grid:not(:has(.photo-card:only-child)):not(:has(.photo-card:nth-child(2):last-child)) {
+        column-count: 4;
+    }
 }
 
 #gallery.date-mode > .photo-card { 
