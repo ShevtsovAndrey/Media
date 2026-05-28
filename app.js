@@ -79,13 +79,14 @@ async function uploadFiles(files) {
 
     const btn = document.getElementById('addBtn');
     const originalText = btn ? btn.textContent : '';
-const originalHTML = btn ? btn.innerHTML : ''; // Запоминаем исходную иконку "+"
-if (btn) {
-    btn.innerHTML = '<img src="loader.png" class="loading-icon">';
-    btn.disabled = true;
-}
+    const originalHTML = btn ? btn.innerHTML : '';
+    
+    if (btn) {
+        btn.innerHTML = '<img src="loader.png" class="loading-icon">';
+        btn.disabled = true;
+    }
 
- for (const file of files) {
+    for (const file of files) {
         try {
             const key = `${Date.now()}_${file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')}`;
             const title = file.name.split('.')[0];
@@ -94,7 +95,7 @@ if (btn) {
             console.log(`📖 Читаю метаданные ${file.name}...`);
             const photoDate = await getExifDate(file);
             
-            // 2. Кэшируем дату в браузере (чтобы сортировка потом была мгновенной)
+            // 2. Кэшируем дату в браузере
             localStorage.setItem(`exif_date_${key}`, photoDate);
             console.log(`💾 Дата сохранена: ${new Date(photoDate).toLocaleDateString()}`);
 
@@ -112,11 +113,26 @@ if (btn) {
 
             // 4. Сохраняем в JSON вместе с датой
             const year = photoDate ? new Date(photoDate).getFullYear() : null;
-await syncJSON([{ title, key, date: photoDate, tagYear: year }], 'add');
+            await syncJSON([{ title, key, date: photoDate, tagYear: year }], 'add');
             console.log(`✅ ${key} → gallery.json`);
 
-            // 5. Показываем
-            renderCard({ title, key }, -1);
+            // === ✅ 5. Обновляем галерею в реальном времени ===
+            const newPhoto = { title, key, date: photoDate, tagYear: year };
+            
+            // Добавляем в глобальный массив (если он есть)
+            if (Array.isArray(window.galleryPhotos)) {
+                window.galleryPhotos.push(newPhoto);
+            }
+            
+            // Перерендериваем в зависимости от режима сортировки
+            const gallery = document.getElementById('gallery');
+            if (sortMode === 'date') {
+                // В режиме дат — полный перерендер с группировкой по годам
+                renderSortedGallery(window.galleryPhotos);
+            } else {
+                // В обычном режиме — просто добавляем карточку
+                renderCard(newPhoto, -1);
+            }
 
         } catch (err) {
             console.error(`❌ Ошибка ${file.name}:`, err);
@@ -125,38 +141,42 @@ await syncJSON([{ title, key, date: photoDate, tagYear: year }], 'add');
     }
 
     if (btn) {
-    btn.innerHTML = originalHTML; // Возвращаем иконку "+"
-    btn.disabled = false;
-}
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    }
 }
 
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
+// === ЗАГРУЗКА ГАЛЕРЕИ (ТОЛЬКО ЯНДЕКС) ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Загрузка</div>';
 
     try {
         const token = localStorage.getItem('github_token');
-        const jsonUrl = `https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`;
-
-        // 1. Получаем JSON с GitHub (заголовок только если есть токен)
-        const headers = {};
-        if (token) headers['Authorization'] = `token ${token}`;
-        
-        const jsonRes = await fetch(jsonUrl, { headers });
-        let currentPhotos = [];
+        let githubPhotos = [];
         let sha = null;
         
-        if (jsonRes.ok) {
-            const data = await jsonRes.json();
-            currentPhotos = JSON.parse(atob(data.content));
-            sha = data.sha;
-            console.log(`✅ JSON загружен: ${currentPhotos.length} фото`);
-        } else {
-            console.warn(`⚠️ Не удалось загрузить JSON: статус ${jsonRes.status}`);
+        // 1. Пытаемся получить JSON с GitHub (для метаданных)
+        if (token) {
+            try {
+                const jsonUrl = `https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`;
+                const jsonRes = await fetch(jsonUrl, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                
+                if (jsonRes.ok) {
+                    const data = await jsonRes.json();
+                    githubPhotos = JSON.parse(atob(data.content));
+                    sha = data.sha;
+                    console.log(`✅ JSON загружен: ${githubPhotos.length} записей`);
+                }
+            } catch (err) {
+                console.warn('⚠️ Не удалось загрузить JSON, продолжаем без метаданных');
+            }
         }
 
-        // 2. Получаем список файлов из Яндекса
+        // 2. Получаем СПИСОК файлов из Яндекса (это наш источник истины!)
         const s3Files = await new Promise((resolve, reject) => {
             s3.listObjectsV2({ Bucket: YANDEX_CONFIG.bucket }, (err, data) => {
                 if (err) reject(err);
@@ -164,108 +184,92 @@ async function loadGallery() {
             });
         });
 
-        const s3Keys = new Set(s3Files.map(f => f.Key));
-        const jsonKeys = new Set(currentPhotos.map(p => p.key));
+        console.log(`📦 Найдено файлов на Яндексе: ${s3Files.length}`);
 
-        // 3. Находим файлы в Яндексе, которых нет в JSON
-        const missingInJson = s3Files
+        // 3. Создаём мапу GitHub фото для быстрого поиска по ключу
+        const githubMap = new Map();
+        githubPhotos.forEach(p => {
+            if (p.key) githubMap.set(p.key, p);
+        });
+
+        // 4. Формируем галерею ТОЛЬКО из файлов Яндекса
+        const galleryPhotos = s3Files
             .filter(f => {
-                // Фильтруем битые файлы с именем 'undefined'
-                if (!f.Key || f.Key === 'undefined' || f.Key.includes('undefined')) {
-                    console.warn(`🗑️ Пропускаем битый файл: ${f.Key}`);
+                // Фильтруем НЕ фото и системные файлы
+                const key = f.Key;
+                if (!key || key === 'undefined' || key.includes('undefined')) {
                     return false;
                 }
-                return !jsonKeys.has(f.Key);
+                if (key.includes('logo') || key.includes('.txt') || key.includes('.json')) {
+                    return false;
+                }
+                // Только изображения
+                if (!f.Key.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) {
+                    return false;
+                }
+                return true;
             })
             .map(f => {
                 const key = f.Key;
                 const title = key.split('/').pop().replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
                 
-                let date = null;
-                let tagYear = null;
-                const match = key.match(/(\d{4})(\d{2})(\d{2})/);
-                if (match) {
-                    const year = parseInt(match[1]);
-                    if (year >= 1999 && year <= 2100) {
-                        date = new Date(`${match[1]}-${match[2]}-${match[3]}`).getTime();
-                        tagYear = year;
+                // Пытаемся найти метаданные из GitHub
+                const githubData = githubMap.get(key) || {};
+                
+                // Если есть tagYear в GitHub — используем его
+                let tagYear = githubData.tagYear || null;
+                
+                // Если нет tagYear, пытаемся извлечь из имени файла
+                if (!tagYear) {
+                    const match = key.match(/(\d{4})(\d{2})(\d{2})/);
+                    if (match) {
+                        const year = parseInt(match[1]);
+                        if (year >= 1999 && year <= 2100) {
+                            tagYear = year;
+                        }
                     }
                 }
-                return { title, key, date, tagYear };
+                
+                // Дата из GitHub или из имени файла
+                let date = githubData.date || null;
+                if (!date) {
+                    const match = key.match(/(\d{4})(\d{2})(\d{2})/);
+                    if (match) {
+                        date = new Date(`${match[1]}-${match[2]}-${match[3]}`).getTime();
+                    }
+                }
+                
+                return { 
+                    title: githubData.title || title, 
+                    key, 
+                    date, 
+                    tagYear 
+                };
             });
 
-        // 4. Автосинхронизация (только если есть токен)
-        if (missingInJson.length > 0 && token) {
-            console.log(`🔄 Автосинхронизация: +${missingInJson.length} файлов`);
-            const updatedPhotos = [...currentPhotos, ...missingInJson];
-            
-            await fetch(jsonUrl, {
-                method: 'PUT',
-                headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: 'Auto-sync: recover missing photos',
-                    content: btoa(JSON.stringify(updatedPhotos, null, 2)),
-                    branch: GITHUB_CONFIG.branch,
-                    sha
-                })
-            });
-            currentPhotos = updatedPhotos;
-        }
+        console.log(`✅ Галерея: ${galleryPhotos.length} фото`);
 
         // 5. Сохраняем глобально и рендерим
-        window.galleryPhotos = currentPhotos;
+        window.galleryPhotos = galleryPhotos;
         gallery.innerHTML = '';
         
         if (sortMode !== 'default') {
-            renderSortedGallery(currentPhotos);
+            renderSortedGallery(galleryPhotos);
         } else {
-            currentPhotos.forEach(photo => renderCard(photo, -1));
+            galleryPhotos.forEach(photo => renderCard(photo, -1));
         }
 
-        if (currentPhotos.length === 0) {
-            gallery.innerHTML = '<div class="loading">Нет фото. Нажми + чтобы добавить.</div>';
+        if (galleryPhotos.length === 0) {
+            gallery.innerHTML = '<div class="loading">Нет фото. Загрузи файлы в Яндекс.</div>';
         }
 
-        // === ✅ ГАЛЕРЕЯ ЗАГРУЖЕНА — сигнализируем hero-section ===
-        if (typeof galleryLoaded !== 'undefined') {
-            galleryLoaded = true;
-            if (typeof checkReady === 'function') {
-                checkReady();
-            }
-        }
+        // === ✅ ГАЛЕРЕЯ ЗАГРУЖЕНА ===
+        galleryLoaded = true;
+        if (typeof checkReady === 'function') checkReady();
 
     } catch (err) {
         console.error('❌ Ошибка загрузки:', err);
-        // Фоллбэк
-        try {
-            const token = localStorage.getItem('github_token');
-            const headers = {};
-            if (token) headers['Authorization'] = `token ${token}`;
-            
-            const fallbackRes = await fetch(
-                `https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`,
-                { headers }
-            );
-            if (fallbackRes.ok) {
-                const data = await fallbackRes.json();
-                const photos = JSON.parse(atob(data.content));
-                window.galleryPhotos = photos;
-                gallery.innerHTML = '';
-                photos.forEach(photo => renderCard(photo, -1));
-                
-                // === ✅ Фоллбэк тоже считается загрузкой ===
-                if (typeof galleryLoaded !== 'undefined') {
-                    galleryLoaded = true;
-                    if (typeof checkReady === 'function') {
-                        checkReady();
-                    }
-                }
-            } else {
-                gallery.innerHTML = '<div class="loading">Ошибка загрузки. Проверь интернет.</div>';
-            }
-        } catch {
-            gallery.innerHTML = '<div class="loading">Ошибка. Попробуй позже.</div>';
-        }
+        gallery.innerHTML = '<div class="loading">Ошибка загрузки. Проверь интернет.</div>';
     }
 }
 
