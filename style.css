@@ -271,6 +271,7 @@ filter: invert(1);
                                                     /* === МОЗАИКА ===*/
 
 /* === МОЗАИКА ===*/
+/* === МОЗАИКА НА CSS GRID === */
 #gallery.date-mode {
     scroll-snap-type: y mandatory;
     height: 100vh;
@@ -283,95 +284,103 @@ filter: invert(1);
 
 .year-section {
     scroll-snap-align: start;
-    height: 100vh;
-    padding: 20px 12px;
+    min-height: 100vh;
+    padding: 20px 12px 60px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 10vh;
-    position: relative;
+    margin-bottom: 5vh; /* Оффсет следующего блока */
 }
 
 .year-header {
     margin: 2vh 0 3vh;
     font-size: clamp(30px, 15vw, 80px);
     flex-shrink: 0;
+    width: 100%;
 }
 
-/* Мозаика */
+/* GRID МОЗАИКА */
 .mosaic-grid {
-    column-count: 3;
-    column-gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 колонки */
+    grid-auto-rows: 250px; /* Базовая высота */
+    grid-gap: 12px;
     width: 100%;
     max-width: 1800px;
-    max-height: 75vh;
-    overflow: hidden;
 }
 
+/* Фото на всю ячейку */
 .mosaic-grid .photo-card {
-    break-inside: avoid;
-    display: inline-block;
-    width: calc(33.333% - 8px); /* ИСПРАВЛЕНО: не 100% */
-    margin: 0 0 8px 0;
+    width: 100%;
+    height: 100%;
     position: relative;
     overflow: hidden;
-    /* Убрали !important и flex: none */
+    border-radius: 2px;
 }
 
 .mosaic-grid .photo-card img {
     width: 100%;
-    height: auto;
-    max-height: calc(75vh / 3);
-    object-fit: contain;
+    height: 100%;
+    object-fit: cover; /* Заполняет ячейку */
     display: block;
+    transition: transform 0.3s ease;
 }
 
-/* Адаптивность: ПЛАНШЕТ */
-@media (max-width: 1024px) { 
-    .mosaic-grid { column-count: 2; }
-    .mosaic-grid .photo-card { width: calc(50% - 6px); }
-    .mosaic-grid .photo-card img { max-height: calc(75vh / 2); }
+.mosaic-grid .photo-card:hover img {
+    transform: scale(1.02);
 }
 
-/* Адаптивность: МОБИЛЬНЫЙ */
-/* Адаптивность: МОБИЛЬНЫЙ (Разрешаем скролл внутри года) */
-@media (max-width: 600px) { 
-    .mosaic-grid { 
-        column-count: 1;
-        /* УБИРАЕМ ограничение высоты и скрытие переполнения */
-        max-height: none !important; 
-        overflow: visible !important;
+/* Делаем некоторые фото больше для эффекта мозаики */
+.mosaic-grid .photo-card:nth-child(5n) {
+    grid-row: span 2;
+    grid-column: span 2;
+}
+
+.mosaic-grid .photo-card:nth-child(7n) {
+    grid-row: span 2;
+}
+
+/* Адаптивность: ПЛАНШЕТ (2 колонки) */
+@media (max-width: 1024px) {
+    .mosaic-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: 200px;
     }
-    .mosaic-grid .photo-card { 
-        width: 100%;
-        margin: 0 0 15px 0; /* Чуть больше отступ */
+    .mosaic-grid .photo-card:nth-child(5n),
+    .mosaic-grid .photo-card:nth-child(7n) {
+        grid-row: span 1;
+        grid-column: span 1;
     }
-    /* Фото без ограничений по высоте */
-    .mosaic-grid .photo-card img { 
-        max-height: none !important;
+}
+
+/* Адаптивность: МОБИЛЬНЫЙ (1 колонка) */
+@media (max-width: 600px) {
+    .mosaic-grid {
+        grid-template-columns: 1fr;
+        grid-auto-rows: 300px; /* Фиксированная высота для мобильных */
+        grid-gap: 10px;
     }
-    
-    /* Секция года может быть ВЫШЕ экрана, если фото много */
+    .mosaic-grid .photo-card:nth-child(5n),
+    .mosaic-grid .photo-card:nth-child(7n) {
+        grid-row: span 1;
+        grid-column: span 1;
+    }
     .year-section {
-        height: auto !important; /* Снимаем фикс 100vh */
-        min-height: 85vh;        /* Но не меньше экрана */
+        min-height: auto;
         margin-bottom: 2vh;
     }
-
-    /* Делаем снаппинг "мягким" (proximity), чтобы можно было листать длинный список */
     #gallery.date-mode {
-        scroll-snap-type: y proximity !important;
-    }
-
-    .year-header { 
-        font-size: clamp(25px, 10vw, 50px); 
-        margin: 2vh 0;
+        scroll-snap-type: y proximity; /* Мягкий снап на мобильных */
     }
 }
 
-#gallery.date-mode > .photo-card { display: none; }
+/* Скрываем карточки вне grid */
+#gallery.date-mode > .photo-card { 
+    display: none; 
+}
 
+/* Стрелка прокрутки */
 .year-section::after {
     content: '↓';
     position: absolute;
