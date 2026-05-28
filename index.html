@@ -6,14 +6,32 @@
     <title>Shevtsov Media</title>
     <link rel="stylesheet" href="style.css">
 </head>
+    <!-- БЛЮР ДЛЯ ДРАГАНДРОП -->
+    <div id="dragOverlay" class="drag-overlay">Drop photo and load it</div>
+    
+    <!-- Заглавный блок с прогресс-баром -->
+    <div id="hero-section">
+        <div class="hero-content">
+            <img src="logo.png" alt="Logo" class="hero-logo">
+        </div>
+        <!-- Прогресс бар загрузки -->
+        <div class="hero-progress">
+            <div class="hero-progress-bar" id="heroProgressBar"></div>
+        </div>
+        <div class="hero-hint">Scroll up to enter</div>
+    </div>
+    
 <body>
     <main id="gallery" class="gallery"></main>
     
     <button id="addBtn" class="add-btn" style="display: none;">+</button>
+    <button id="sortBtn" class="sort-btn" title="Сменить сортировку">⟳</button>
     <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
 
     <!-- AWS SDK v2 (работает стабильно) -->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1479.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.min.js"></script>
     <script src="app.js"></script>
+
 </body>
 </html>
