@@ -335,23 +335,38 @@ filter: invert(1);
 }
 
 /* Адаптивность: МОБИЛЬНЫЙ */
+/* Адаптивность: МОБИЛЬНЫЙ (Разрешаем скролл внутри года) */
 @media (max-width: 600px) { 
     .mosaic-grid { 
         column-count: 1;
-        max-height: none;
+        /* УБИРАЕМ ограничение высоты и скрытие переполнения */
+        max-height: none !important; 
+        overflow: visible !important;
     }
     .mosaic-grid .photo-card { 
         width: 100%;
-        margin: 0 0 10px 0;
+        margin: 0 0 15px 0; /* Чуть больше отступ */
     }
+    /* Фото без ограничений по высоте */
     .mosaic-grid .photo-card img { 
-        max-height: 40vh; /* Ограничение для мобильных */
+        max-height: none !important;
     }
-    .year-header { font-size: clamp(25px, 10vw, 50px); }
-    /* Сохраняем snap на мобильных */
-    .year-section { 
-        height: 90vh; /* Чуть меньше для удобства */
-        margin-bottom: 5vh;
+    
+    /* Секция года может быть ВЫШЕ экрана, если фото много */
+    .year-section {
+        height: auto !important; /* Снимаем фикс 100vh */
+        min-height: 85vh;        /* Но не меньше экрана */
+        margin-bottom: 2vh;
+    }
+
+    /* Делаем снаппинг "мягким" (proximity), чтобы можно было листать длинный список */
+    #gallery.date-mode {
+        scroll-snap-type: y proximity !important;
+    }
+
+    .year-header { 
+        font-size: clamp(25px, 10vw, 50px); 
+        margin: 2vh 0;
     }
 }
 
