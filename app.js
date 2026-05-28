@@ -790,48 +790,97 @@ window.addEventListener('load', () => {
 });
 
 
-
-
-
 // === ЗАГЛАВНЫЙ БЛОК С ПРУЖИНИВАНИЕМ ===
 const heroSection = document.getElementById('hero-section');
 let heroVisible = true;
-let lastScrollY = window.scrollY;
-let scrollThreshold = window.innerHeight / 2; // Половина экрана
+let isAnimating = false;
+let scrollAccumulator = 0;
 
-window.addEventListener('scroll', () => {
-    const currentScrollY = window.scrollY;
+// Wheel event для десктопа
+window.addEventListener('wheel', (e) => {
+    if (isAnimating) return;
     
-    // Скролл вверх (показываем сайт)
-    if (currentScrollY < 0 && Math.abs(currentScrollY) > scrollThreshold) {
-        if (heroVisible) {
-            heroSection.classList.add('hidden');
-            heroVisible = false;
-            // Разрешаем скролл галереи
-            document.getElementById('gallery').style.pointerEvents = 'auto';
-        }
-    }
-    // Скролл вниз (возвращаем заглавный блок)
-    else if (currentScrollY >= 0) {
-        if (!heroVisible && Math.abs(currentScrollY) < scrollThreshold / 2) {
-            heroSection.classList.remove('hidden');
-            heroVisible = true;
-            // Блокируем скролл галереи
-            document.getElementById('gallery').style.pointerEvents = 'none';
-        }
-    }
+    // Накапливаем скролл
+    scrollAccumulator += e.deltaY;
     
-    lastScrollY = currentScrollY;
+    // Скролл вверх (отрицательный)
+    if (scrollAccumulator < -100 && heroVisible) {
+        e.preventDefault();
+        isAnimating = true;
+        heroVisible = false;
+        heroSection.classList.add('hidden');
+        
+        setTimeout(() => {
+            isAnimating = false;
+            scrollAccumulator = 0;
+        }, 600);
+    }
+    // Скролл вниз (положительный)
+    else if (scrollAccumulator > 100 && !heroVisible) {
+        e.preventDefault();
+        isAnimating = true;
+        heroVisible = true;
+        heroSection.classList.remove('hidden');
+        
+        setTimeout(() => {
+            isAnimating = false;
+            scrollAccumulator = 0;
+        }, 600);
+    }
+}, { passive: false });
+
+// Touch события для мобильных
+let touchStartY = 0;
+
+window.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
 }, { passive: true });
 
+window.addEventListener('touchend', (e) => {
+    if (isAnimating) return;
+    
+    const touchEndY = e.changedTouches[0].clientY;
+    const diff = touchStartY - touchEndY;
+    
+    // Свайп вверх (открываем сайт)
+    if (diff < -100 && heroVisible) {
+        isAnimating = true;
+        heroVisible = false;
+        heroSection.classList.add('hidden');
+        
+        setTimeout(() => {
+            isAnimating = false;
+        }, 600);
+    }
+    // Свайп вниз (возвращаем hero)
+    else if (diff > 100 && !heroVisible) {
+        isAnimating = true;
+        heroVisible = true;
+        heroSection.classList.remove('hidden');
+        
+        setTimeout(() => {
+            isAnimating = false;
+        }, 600);
+    }
+}, { passive: false });
+
 // Инициализация
-document.getElementById('gallery').style.pointerEvents = 'none';
-
-
-
-
-
+if (heroSection) {
+    document.body.style.overflow = 'hidden'; // Блокируем скролл body пока показан hero
+}
 
 
 // Старт
 loadGallery();
+
+// Когда галерея загрузилась
+window.addEventListener('load', () => {
+    // Ждём пока загрузится галерея
+    setTimeout(() => {
+        const gallery = document.getElementById('gallery');
+        if (gallery && gallery.children.length > 0) {
+            // Галерея загружена, hero всё ещё виден
+            console.log('✅ Hero section ready, scroll up to hide');
+        }
+    }, 1000);
+});
