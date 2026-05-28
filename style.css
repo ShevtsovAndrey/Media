@@ -342,7 +342,7 @@ filter: invert(1);
 
                                                     /* === МОЗАИКА ===*/
 
-/* === ГАЛЕРЕЯ (Google Photos Style — без дыр) === */
+/* === МОЗАИКА ===*/
 #gallery.date-mode {
     scroll-snap-type: y mandatory;
     height: 100vh;
@@ -355,90 +355,69 @@ filter: invert(1);
 
 .year-section {
     scroll-snap-align: start;
-    min-height: 100vh;
+    min-height: 100vh; /* Может быть больше если фото много */
     padding: 20px 12px 60px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: 5vh;
-    width: 100%;
 }
 
 .year-header {
-    margin: 2vh 0 2vh;
+    margin: 2vh 0 3vh;
     font-size: clamp(30px, 15vw, 80px);
+    flex-shrink: 0;
     width: 100%;
-    text-align: left;
-    padding-left: 12px;
 }
 
-/* GRID без дыр */
+/* GRID МОЗАИКА */
 .mosaic-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    grid-auto-rows: 200px;
-    gap: 3px;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: min-content; /* ВАЖНО: высота по контенту */
+    grid-gap: 12px;
     width: 100%;
-    grid-auto-flow: dense; /* Заполняет дыры */
+    max-width: 1800px;
 }
 
 .mosaic-grid .photo-card {
+    width: 100%;
     position: relative;
     overflow: hidden;
-    width: 100%;
-    height: 100%;
+    border-radius: 2px;
 }
 
-/* ФОТО ЗАПОЛНЯЮТ ЯЧЕЙКИ (без дыр) */
 .mosaic-grid .photo-card img {
     width: 100%;
-    height: 100%;
-    object-fit: cover; /* Ключевое: заполняет без пробелов */
+    height: auto; /* ВАЖНО: авто-высота */
+    object-fit: contain; /* Показываем целиком */
     display: block;
-    transition: transform 0.3s ease;
-}
-
-.mosaic-grid .photo-card:hover img {
-    transform: scale(1.03);
-}
-
-/* Делаем некоторые фото больше для вариативности */
-.mosaic-grid .photo-card:nth-child(7n) {
-    grid-column: span 2;
-    grid-row: span 2;
-}
-
-.mosaic-grid .photo-card:nth-child(5n+2) {
-    grid-row: span 2;
+    max-height: 40vh; /* Ограничение чтобы не были гигантскими */
 }
 
 /* Адаптивность: ПЛАНШЕТ */
 @media (max-width: 1024px) {
     .mosaic-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        grid-auto-rows: 180px;
-    }
-    .mosaic-grid .photo-card:nth-child(7n),
-    .mosaic-grid .photo-card:nth-child(5n+2) {
-        grid-column: span 1;
-        grid-row: span 1;
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
 /* Адаптивность: МОБИЛЬНЫЙ */
 @media (max-width: 600px) {
     .mosaic-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 колонки на мобильном */
-        grid-auto-rows: 150px;
-        gap: 2px;
+        grid-template-columns: 1fr;
+        grid-gap: 10px;
+    }
+    .mosaic-grid .photo-card img {
+        max-height: 35vh; /* Чуть меньше на мобильном */
     }
     .year-section {
-        min-height: auto;
+        min-height: auto; /* Разрешаем расти */
         margin-bottom: 2vh;
     }
     #gallery.date-mode {
-        scroll-snap-type: y proximity;
+        scroll-snap-type: y proximity; /* Мягкий снап */
     }
 }
 
