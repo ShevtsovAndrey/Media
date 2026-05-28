@@ -147,7 +147,6 @@ async function uploadFiles(files) {
 }
 
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
-// === ЗАГРУЗКА ГАЛЕРЕИ (ТОЛЬКО ЯНДЕКС) ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Загрузка</div>';
@@ -253,11 +252,14 @@ async function loadGallery() {
         window.galleryPhotos = galleryPhotos;
         gallery.innerHTML = '';
         
+        /*
         if (sortMode !== 'default') {
             renderSortedGallery(galleryPhotos);
         } else {
             galleryPhotos.forEach(photo => renderCard(photo, -1));
-        }
+        }*/
+
+            renderSortedGallery(galleryPhotos);
 
         if (galleryPhotos.length === 0) {
             gallery.innerHTML = '<div class="loading">Нет фото. Загрузи файлы в Яндекс.</div>';
@@ -507,11 +509,7 @@ function openLightbox(imgUrl) {
 
 window.openLightbox = openLightbox;
 
-
-
-
-// СОРТИРОВКА ГАЛЕРЕИ ПО КНОПКЕ (ТЕСТ)
-
+/*
 // === СОРТИРОВКА ГАЛЕРЕИ ===
 let sortMode = localStorage.getItem('gallerySortMode') || 'default';
 const sortBtn = document.getElementById('sortBtn');
@@ -592,7 +590,17 @@ async function getPhotoHue(key, imgUrl) {
         img.src = imgUrl;
     });
 }
+*/
 
+
+
+
+
+
+
+
+
+/*
 //СОРТИРОВКА
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
@@ -750,6 +758,228 @@ function getPhotoHueSimple(imgUrl) {
         img.src = imgUrl;
     });
 }
+*/
+
+// === СОРТИРОВКА ГАЛЕРЕИ (ВСЕГДА ПО ДАТЕ + HSL) ===
+async function renderSortedGallery(photosSource) {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '<div class="loading">Сортировка...</div>';
+    await new Promise(r => setTimeout(r, 30));
+
+    let photos = Array.isArray(photosSource) ? [...photosSource] : [];
+    
+    // Фильтр битых ключей
+    photos = photos.filter(p => {
+        if (!p.key || p.key === 'undefined' || p.key.trim() === '' || p.key === 'null') {
+            return false;
+        }
+        return true;
+    });
+    
+    if (photos.length === 0) {
+        gallery.innerHTML = '<div class="loading">Нет фото</div>';
+        return;
+    }
+
+    // === ВЫЧИСЛЯЕМ HSL ДЛЯ ВСЕХ ФОТО ===
+    console.log('🎨 Вычисляем HSL для', photos.length, 'фото...');
+    const photosWithHSL = await Promise.all(photos.map(async (p, index) => {
+        const hsl = await getPhotoHSL(`${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`);
+        console.log(`[${index + 1}/${photos.length}] ${p.key.substring(0, 30)}... → HSL: ${hsl.h}° ${hsl.s}% ${hsl.l}%`);
+        return { ...p, hsl };
+    }));
+
+    // === ГРУППИРОВКА ПО ГОДАМ ===
+    const groups = {};
+    const unknown = [];
+
+    photosWithHSL.forEach(p => {
+        const y = p.tagYear;
+        
+        let isValid = false;
+        if (typeof y === 'number' && !isNaN(y) && y >= 1999 && y <= 2100) {
+            isValid = true;
+        }
+        else if (typeof y === 'string') {
+            const num = parseInt(y.trim(), 10);
+            if (!isNaN(num) && num >= 1999 && num <= 2100) {
+                isValid = true;
+                p.tagYear = num;
+            }
+        }
+        
+        if (isValid) {
+            const year = String(p.tagYear);
+            if (!groups[year]) groups[year] = [];
+            groups[year].push(p);
+        } else {
+            unknown.push(p);
+        }
+    });
+
+    // === СОРТИРОВКА ВНУТРИ КАЖДОГО ГОДА ===
+    Object.keys(groups).forEach(year => {
+        groups[year].sort((a, b) => {
+            // 1. Сортируем по Lightness (светлые сначала)
+            const lDiff = a.hsl.l - b.hsl.l;
+            if (Math.abs(lDiff) > 5) return lDiff; // Разница > 5% значима
+            
+            // 2. Если яркость похожа — сортируем по Hue (цвет)
+            const hDiff = a.hsl.h - b.hsl.h;
+            if (Math.abs(hDiff) > 10) return hDiff; // Разница > 10° значима
+            
+            // 3. Если цвет похож — сортируем по Saturation (менее насыщенные сначала)
+            return a.hsl.s - b.hsl.s;
+        });
+    });
+
+    // === РЕНДЕРИНГ ===
+    gallery.innerHTML = '';
+    gallery.classList.add('date-mode');
+    
+    const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
+
+    sortedYears.forEach(year => {
+        const section = document.createElement('div');
+        section.className = 'year-section';
+        
+        const header = document.createElement('div');
+        header.className = 'year-header';
+        header.textContent = year;
+        section.appendChild(header);
+        
+        const grid = document.createElement('div');
+        grid.className = 'mosaic-grid';
+        
+        groups[year].forEach(photo => renderCard(photo, -1, false, grid));
+        
+        section.appendChild(grid);
+        gallery.appendChild(section);
+    });
+
+    if (unknown.length > 0) {
+        const section = document.createElement('div');
+        section.className = 'year-section';
+        
+        const header = document.createElement('div');
+        header.className = 'year-header';
+        header.textContent = '-';
+        section.appendChild(header);
+        
+        const grid = document.createElement('div');
+        grid.className = 'mosaic-grid';
+        unknown.forEach(photo => renderCard(photo, -1, true, grid));
+        
+        section.appendChild(grid);
+        gallery.appendChild(section);
+    }
+    
+    console.log('✅ Сортировка завершена');
+}
+
+// === КАЧЕСТВЕННЫЙ АНАЛИЗ HSL (100×100 пикселей, центр изображения) ===
+function getPhotoHSL(imgUrl) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+            const c = document.createElement('canvas');
+            const ctx = c.getContext('2d');
+            
+            // Берём центральный регион 100×100 для точности
+            const size = Math.min(img.width, img.height, 200);
+            const startX = (img.width - size) / 2;
+            const startY = (img.height - size) / 2;
+            
+            c.width = 100;
+            c.height = 100;
+            ctx.drawImage(img, startX, startY, size, size, 0, 0, 100, 100);
+            
+            const d = ctx.getImageData(0, 0, 100, 100).data;
+            
+            // Считаем средний RGB
+            let r = 0, g = 0, b = 0;
+            let count = 0;
+            
+            for (let i = 0; i < d.length; i += 4) {
+                // Пропускаем очень тёмные и очень светлые пиксели (шум)
+                const brightness = (d[i] + d[i+1] + d[i+2]) / 3;
+                if (brightness > 10 && brightness < 245) {
+                    r += d[i];
+                    g += d[i+1];
+                    b += d[i+2];
+                    count++;
+                }
+            }
+            
+            if (count === 0) {
+                // Если всё чёрное или белое — берём всё
+                for (let i = 0; i < d.length; i += 4) {
+                    r += d[i];
+                    g += d[i+1];
+                    b += d[i+2];
+                    count++;
+                }
+            }
+            
+            r /= count;
+            g /= count;
+            b /= count;
+            
+            // RGB → HSL
+            const hsl = rgbToHSL(r, g, b);
+            resolve(hsl);
+        };
+        img.onerror = () => resolve({ h: 0, s: 0, l: 50 }); // Fallback
+        img.src = imgUrl;
+    });
+}
+
+// === RGB → HSL ===
+function rgbToHSL(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    
+    // Lightness
+    const l = (max + min) / 2;
+    
+    // Saturation & Hue
+    let h = 0;
+    let s = 0;
+    
+    if (delta !== 0) {
+        // Saturation
+        s = l < 0.5 ? delta / (max + min) : delta / (2 - max - min);
+        
+        // Hue
+        if (max === r) {
+            h = ((g - b) / delta + (g < b ? 6 : 0)) / 6;
+        } else if (max === g) {
+            h = ((b - r) / delta + 2) / 6;
+        } else {
+            h = ((r - g) / delta + 4) / 6;
+        }
+    }
+    
+    return {
+        h: Math.round(h * 360), // 0-360
+        s: Math.round(s * 100), // 0-100%
+        l: Math.round(l * 100)  // 0-100%
+    };
+}
+
+
+
+
+
+
+
+
 
 
 // === DRAG & DROP (Ждёт загрузки страницы) ===
