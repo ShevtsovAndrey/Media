@@ -7,13 +7,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
     <!-- БЛЮР ДЛЯ ДРАГАНДРОП -->
-<div id="dragOverlay" class="drag-overlay">Drop photo and load it</div>
-    <!-- Заглавный блок -->
-<div id="hero-section">
-    <div class="hero-content">
-        <img src="logo.png" alt="Logo" class="hero-logo">
+    <div id="dragOverlay" class="drag-overlay">Drop photo and load it</div>
+    
+    <!-- Заглавный блок с прогресс-баром -->
+    <div id="hero-section">
+        <div class="hero-content">
+            <img src="logo.png" alt="Logo" class="hero-logo">
+        </div>
+        <!-- Прогресс бар загрузки -->
+        <div class="hero-progress">
+            <div class="hero-progress-bar" id="heroProgressBar"></div>
+        </div>
+        <div class="hero-hint">Scroll up to enter</div>
     </div>
-</div>
+    
 <body>
     <main id="gallery" class="gallery"></main>
     
