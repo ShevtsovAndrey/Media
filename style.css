@@ -186,16 +186,6 @@ body {
     cursor:default;
 }
 
-
-/* Размытие для фото без дат */
-
-.photo-card.no-date {
-    opacity: 0.5;
-}
-.photo-card.no-date:hover {
-    opacity: 1;
-}
-
 /*КНОПКИ ВНИЗУ*/
 
 .add-btn, .sort-btn {

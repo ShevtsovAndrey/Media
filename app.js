@@ -760,7 +760,8 @@ function getPhotoHueSimple(imgUrl) {
 }
 */
 
-// === СОРТИРОВКА ГАЛЕРЕИ (ВСЕГДА ПО ДАТЕ + HSL) ===
+
+// === СОРТИРОВКА: СВЕТЛЫЕ→ТЁМНЫЕ + ЦВЕТ (HUE) ===
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Сортировка...</div>';
@@ -785,7 +786,7 @@ async function renderSortedGallery(photosSource) {
     console.log('🎨 Вычисляем HSL для', photos.length, 'фото...');
     const photosWithHSL = await Promise.all(photos.map(async (p, index) => {
         const hsl = await getPhotoHSL(`${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`);
-        console.log(`[${index + 1}/${photos.length}] ${p.key.substring(0, 30)}... → HSL: ${hsl.h}° ${hsl.s}% ${hsl.l}%`);
+        console.log(`[${index + 1}/${photos.length}] ${p.key.substring(0, 30)}... → H:${hsl.h}° S:${hsl.s}% L:${hsl.l}%`);
         return { ...p, hsl };
     }));
 
@@ -820,16 +821,16 @@ async function renderSortedGallery(photosSource) {
     // === СОРТИРОВКА ВНУТРИ КАЖДОГО ГОДА ===
     Object.keys(groups).forEach(year => {
         groups[year].sort((a, b) => {
-            // 1. Сортируем по Lightness (светлые сначала)
-            const lDiff = a.hsl.l - b.hsl.l;
-            if (Math.abs(lDiff) > 5) return lDiff; // Разница > 5% значима
+            // 1. Главный приоритет: Lightness (светлые → тёмные)
+            const lightnessDiff = b.hsl.l - a.hsl.l;
             
-            // 2. Если яркость похожа — сортируем по Hue (цвет)
-            const hDiff = a.hsl.h - b.hsl.h;
-            if (Math.abs(hDiff) > 10) return hDiff; // Разница > 10° значима
+            // Если разница в яркости больше 15% — сортируем по яркости
+            if (Math.abs(lightnessDiff) > 15) {
+                return lightnessDiff;
+            }
             
-            // 3. Если цвет похож — сортируем по Saturation (менее насыщенные сначала)
-            return a.hsl.s - b.hsl.s;
+            // 2. Если яркость похожа — сортируем по цвету (Hue)
+            return a.hsl.h - b.hsl.h;
         });
     });
 
@@ -876,7 +877,6 @@ async function renderSortedGallery(photosSource) {
     
     console.log('✅ Сортировка завершена');
 }
-
 // === КАЧЕСТВЕННЫЙ АНАЛИЗ HSL (100×100 пикселей, центр изображения) ===
 function getPhotoHSL(imgUrl) {
     return new Promise(resolve => {
