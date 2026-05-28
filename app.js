@@ -789,5 +789,49 @@ window.addEventListener('load', () => {
     }, false);
 });
 
+
+
+
+
+// === ЗАГЛАВНЫЙ БЛОК С ПРУЖИНИВАНИЕМ ===
+const heroSection = document.getElementById('hero-section');
+let heroVisible = true;
+let lastScrollY = window.scrollY;
+let scrollThreshold = window.innerHeight / 2; // Половина экрана
+
+window.addEventListener('scroll', () => {
+    const currentScrollY = window.scrollY;
+    
+    // Скролл вверх (показываем сайт)
+    if (currentScrollY < 0 && Math.abs(currentScrollY) > scrollThreshold) {
+        if (heroVisible) {
+            heroSection.classList.add('hidden');
+            heroVisible = false;
+            // Разрешаем скролл галереи
+            document.getElementById('gallery').style.pointerEvents = 'auto';
+        }
+    }
+    // Скролл вниз (возвращаем заглавный блок)
+    else if (currentScrollY >= 0) {
+        if (!heroVisible && Math.abs(currentScrollY) < scrollThreshold / 2) {
+            heroSection.classList.remove('hidden');
+            heroVisible = true;
+            // Блокируем скролл галереи
+            document.getElementById('gallery').style.pointerEvents = 'none';
+        }
+    }
+    
+    lastScrollY = currentScrollY;
+}, { passive: true });
+
+// Инициализация
+document.getElementById('gallery').style.pointerEvents = 'none';
+
+
+
+
+
+
+
 // Старт
 loadGallery();
