@@ -26,46 +26,124 @@ body {
 
 
 /*                                              === ЗАГЛАВНЫЙ БЛОК === */
-/* === ЗАГЛАВНЫЙ БЛОК === */
 #hero-section {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
     background: var(--bg);
-    z-index: 10000; /* Выше dragOverlay */
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    pointer-events: none; /* Пропускаем клики когда скрыт */
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Пружинистый эффект */
+    z-index: 9999999;
 }
 
 #hero-section.hidden {
     transform: translateY(-100%);
-    pointer-events: none;
 }
 
-#hero-section:not(.hidden) {
-    pointer-events: auto; /* Блокируем клики когда виден */
+.hero-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10vh 5vw;
+    box-sizing: border-box;
+    filter: invert(1);
 }
 
-/* Drag overlay выше hero */
-.drag-overlay {
-    z-index: 10001;
+.hero-logo {
+    max-width: 80%;
+    max-height: 80vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    opacity: 0.9;
+    animation: fadeIn 0.5s ease;
 }
 
-/* Когда hero скрыт — разрешаем скролл body */
-body.hero-hidden {
-    overflow: auto;
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 0.9; transform: scale(1); }
 }
 
-body:not(.hero-hidden) {
+/* Адаптивность */
+@media (max-width: 768px) {
+    .hero-content {
+        padding: 15vh 8vw;
+    }
+    .hero-logo {
+        max-width: 90%;
+        max-height: 70vh;
+    }
+}
+
+/* Progress bar для hero */
+.hero-progress {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    max-width: 400px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
     overflow: hidden;
 }
 
-/* ГАЛЕРЕЯ */
+.hero-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), #fff);
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--accent);
+}
+
+.hero-hint {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
+/* Когда готово к скроллу */
+#hero-section.ready {
+    cursor: pointer;
+}
+
+#hero-section.ready .hero-hint {
+    color: var(--accent);
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-5px); }
+}
+
+
+
+
+
+
+/* ====================================================== ГАЛЕРЕЯ И ПРОЧЕЕ*/
+
+
+
 
 
 .gallery {
@@ -322,6 +400,14 @@ filter: invert(1);
         background: var(--bg-light);
         color: #000000;
     }
+
+    .hero-content {
+            background: var(--bg-light);
+    filter: invert(0);
+    }
+    .hero-logo {
+    mix-blend-mode: multiply;
+}
 
     /* Заголовки годов */
     .year-header {

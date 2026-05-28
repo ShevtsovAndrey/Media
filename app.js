@@ -131,6 +131,7 @@ await syncJSON([{ title, key, date: photoDate, tagYear: year }], 'add');
 }
 
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
+// === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Загрузка</div>';
@@ -226,6 +227,14 @@ async function loadGallery() {
             gallery.innerHTML = '<div class="loading">Нет фото. Нажми + чтобы добавить.</div>';
         }
 
+        // === ✅ ГАЛЕРЕЯ ЗАГРУЖЕНА — сигнализируем hero-section ===
+        if (typeof galleryLoaded !== 'undefined') {
+            galleryLoaded = true;
+            if (typeof checkReady === 'function') {
+                checkReady();
+            }
+        }
+
     } catch (err) {
         console.error('❌ Ошибка загрузки:', err);
         // Фоллбэк
@@ -244,6 +253,14 @@ async function loadGallery() {
                 window.galleryPhotos = photos;
                 gallery.innerHTML = '';
                 photos.forEach(photo => renderCard(photo, -1));
+                
+                // === ✅ Фоллбэк тоже считается загрузкой ===
+                if (typeof galleryLoaded !== 'undefined') {
+                    galleryLoaded = true;
+                    if (typeof checkReady === 'function') {
+                        checkReady();
+                    }
+                }
             } else {
                 gallery.innerHTML = '<div class="loading">Ошибка загрузки. Проверь интернет.</div>';
             }
@@ -790,41 +807,74 @@ window.addEventListener('load', () => {
 });
 
 
-// === ЗАГЛАВНЫЙ БЛОК С ПРУЖИНИВАНИЕМ ===
+// === ЗАГЛАВНЫЙ БЛОК С ПРОГРЕСС БАРОМ ===
 const heroSection = document.getElementById('hero-section');
+const progressBar = document.getElementById('heroProgressBar');
 let heroVisible = true;
 let isAnimating = false;
-let scrollAccumulator = 0;
+let isReady = false; // Готовы ли мы к скроллу
+let galleryLoaded = false;
+let progressValue = 0;
+
+// Анимация прогресс бара
+function animateProgress() {
+    if (progressValue < 100) {
+        progressValue += 2; // Скорость загрузки
+        if (progressBar) {
+            progressBar.style.width = progressValue + '%';
+        }
+        setTimeout(animateProgress, 50);
+    } else {
+        // Прогресс дошёл до 100%
+        checkReady();
+    }
+}
+
+// Проверяем, готовы ли мы (галерея загружена И прогресс 100%)
+function checkReady() {
+    if (galleryLoaded && progressValue >= 100) {
+        isReady = true;
+        if (heroSection) {
+            heroSection.classList.add('ready');
+        }
+        console.log('✅ Hero ready! Scroll up to enter');
+    }
+}
+
+// Запускаем прогресс бар при загрузке страницы
+window.addEventListener('load', () => {
+    setTimeout(animateProgress, 500); // Небольшая задержка перед стартом
+});
 
 // Wheel event для десктопа
 window.addEventListener('wheel', (e) => {
-    if (isAnimating) return;
-    
-    // Накапливаем скролл
-    scrollAccumulator += e.deltaY;
+    if (isAnimating || !isReady) return;
     
     // Скролл вверх (отрицательный)
-    if (scrollAccumulator < -100 && heroVisible) {
+    if (e.deltaY < -50 && heroVisible) {
         e.preventDefault();
         isAnimating = true;
         heroVisible = false;
         heroSection.classList.add('hidden');
+        document.body.classList.add('hero-hidden');
         
         setTimeout(() => {
             isAnimating = false;
-            scrollAccumulator = 0;
+            // Скрываем hero полностью после анимации
+            heroSection.style.display = 'none';
         }, 600);
     }
-    // Скролл вниз (положительный)
-    else if (scrollAccumulator > 100 && !heroVisible) {
+    // Скролл вниз (положительный) — возвращаем hero
+    else if (e.deltaY > 50 && !heroVisible) {
         e.preventDefault();
         isAnimating = true;
         heroVisible = true;
         heroSection.classList.remove('hidden');
+        heroSection.style.display = 'flex';
+        document.body.classList.remove('hero-hidden');
         
         setTimeout(() => {
             isAnimating = false;
-            scrollAccumulator = 0;
         }, 600);
     }
 }, { passive: false });
@@ -837,7 +887,7 @@ window.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 window.addEventListener('touchend', (e) => {
-    if (isAnimating) return;
+    if (isAnimating || !isReady) return;
     
     const touchEndY = e.changedTouches[0].clientY;
     const diff = touchStartY - touchEndY;
@@ -847,6 +897,8 @@ window.addEventListener('touchend', (e) => {
         isAnimating = true;
         heroVisible = false;
         heroSection.classList.add('hidden');
+        document.body.classList.add('hero-hidden');
+        heroSection.style.display = 'none';
         
         setTimeout(() => {
             isAnimating = false;
@@ -857,6 +909,8 @@ window.addEventListener('touchend', (e) => {
         isAnimating = true;
         heroVisible = true;
         heroSection.classList.remove('hidden');
+        heroSection.style.display = 'flex';
+        document.body.classList.remove('hero-hidden');
         
         setTimeout(() => {
             isAnimating = false;
@@ -866,7 +920,7 @@ window.addEventListener('touchend', (e) => {
 
 // Инициализация
 if (heroSection) {
-    document.body.style.overflow = 'hidden'; // Блокируем скролл body пока показан hero
+    document.body.style.overflow = 'hidden';
 }
 
 
