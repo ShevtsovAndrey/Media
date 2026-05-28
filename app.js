@@ -813,21 +813,14 @@ let isAnimating = false;
 let isReady = false;
 let galleryLoaded = false;
 let progressValue = 0;
-let heroDismissed = false;
 
-// Инициализация (после DOM)
+// Инициализация после DOM
 document.addEventListener('DOMContentLoaded', () => {
     heroSection = document.getElementById('hero-section');
     progressBar = document.getElementById('heroProgressBar');
     
-    // Проверяем сессию
-    heroDismissed = sessionStorage.getItem('heroDismissed') === 'true';
-    
-    if (heroDismissed && heroSection) {
-        heroSection.style.display = 'none';
-        heroVisible = false;
-        document.body.classList.add('hero-hidden');
-    } else if (heroSection) {
+    // Блокируем скролл body пока герой виден
+    if (heroSection) {
         document.body.classList.remove('hero-hidden');
     }
 });
@@ -845,7 +838,7 @@ function animateProgress() {
 
 // Проверка готовности
 function checkReady() {
-    if (galleryLoaded && progressValue >= 100 && !heroDismissed && heroSection) {
+    if (galleryLoaded && progressValue >= 100 && heroSection) {
         isReady = true;
         heroSection.classList.add('ready');
         console.log('✅ Hero ready! Scroll up to enter');
@@ -854,16 +847,14 @@ function checkReady() {
 
 // Запуск прогресса после полной загрузки
 window.addEventListener('load', () => {
-    if (!heroDismissed) {
-        setTimeout(animateProgress, 300);
-    }
+    setTimeout(animateProgress, 300);
 });
 
 // Wheel event (десктоп)
 window.addEventListener('wheel', (e) => {
-    if (isAnimating || heroDismissed || !isReady) return;
+    if (isAnimating || !isReady || !heroVisible) return;
     
-    if (e.deltaY < -50 && heroVisible) {
+    if (e.deltaY < -50) {
         e.preventDefault();
         dismissHero();
     }
@@ -876,10 +867,10 @@ window.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 window.addEventListener('touchend', (e) => {
-    if (isAnimating || heroDismissed || !isReady) return;
+    if (isAnimating || !isReady || !heroVisible) return;
     
     const diff = touchStartY - e.changedTouches[0].clientY;
-    if (diff < -100 && heroVisible) {
+    if (diff < -100) {
         dismissHero();
     }
 }, { passive: false });
@@ -890,9 +881,7 @@ function dismissHero() {
     
     isAnimating = true;
     heroVisible = false;
-    heroDismissed = true;
     
-    sessionStorage.setItem('heroDismissed', 'true');
     heroSection.classList.add('hidden');
     document.body.classList.add('hero-hidden');
     
