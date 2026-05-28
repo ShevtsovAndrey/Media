@@ -131,7 +131,6 @@ await syncJSON([{ title, key, date: photoDate, tagYear: year }], 'add');
 }
 
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
-// === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<div class="loading">Загрузка</div>';
@@ -812,27 +811,36 @@ const heroSection = document.getElementById('hero-section');
 const progressBar = document.getElementById('heroProgressBar');
 let heroVisible = true;
 let isAnimating = false;
-let isReady = false; // Готовы ли мы к скроллу
+let isReady = false;
 let galleryLoaded = false;
 let progressValue = 0;
+
+// Проверяем, был ли уже скрыт герой в этой сессии
+let heroDismissed = sessionStorage.getItem('heroDismissed') === 'true';
+
+// Если уже скрыт — сразу убираем
+if (heroDismissed && heroSection) {
+    heroSection.style.display = 'none';
+    heroVisible = false;
+    document.body.classList.add('hero-hidden');
+}
 
 // Анимация прогресс бара
 function animateProgress() {
     if (progressValue < 100) {
-        progressValue += 2; // Скорость загрузки
+        progressValue += 2;
         if (progressBar) {
             progressBar.style.width = progressValue + '%';
         }
         setTimeout(animateProgress, 50);
     } else {
-        // Прогресс дошёл до 100%
         checkReady();
     }
 }
 
-// Проверяем, готовы ли мы (галерея загружена И прогресс 100%)
+// Проверяем готовность
 function checkReady() {
-    if (galleryLoaded && progressValue >= 100) {
+    if (galleryLoaded && progressValue >= 100 && !heroDismissed) {
         isReady = true;
         if (heroSection) {
             heroSection.classList.add('ready');
@@ -841,42 +849,36 @@ function checkReady() {
     }
 }
 
-// Запускаем прогресс бар при загрузке страницы
+// Запускаем прогресс при загрузке
 window.addEventListener('load', () => {
-    setTimeout(animateProgress, 500); // Небольшая задержка перед стартом
+    if (!heroDismissed) {
+        setTimeout(animateProgress, 500);
+    }
 });
 
 // Wheel event для десктопа
 window.addEventListener('wheel', (e) => {
-    if (isAnimating || !isReady) return;
+    if (isAnimating || heroDismissed) return;
     
-    // Скролл вверх (отрицательный)
+    // Скролл вверх (скрываем героя)
     if (e.deltaY < -50 && heroVisible) {
         e.preventDefault();
         isAnimating = true;
         heroVisible = false;
+        heroDismissed = true;
+        
+        // Сохраняем в сессии
+        sessionStorage.setItem('heroDismissed', 'true');
+        
         heroSection.classList.add('hidden');
         document.body.classList.add('hero-hidden');
         
         setTimeout(() => {
             isAnimating = false;
-            // Скрываем hero полностью после анимации
             heroSection.style.display = 'none';
         }, 600);
     }
-    // Скролл вниз (положительный) — возвращаем hero
-    else if (e.deltaY > 50 && !heroVisible) {
-        e.preventDefault();
-        isAnimating = true;
-        heroVisible = true;
-        heroSection.classList.remove('hidden');
-        heroSection.style.display = 'flex';
-        document.body.classList.remove('hero-hidden');
-        
-        setTimeout(() => {
-            isAnimating = false;
-        }, 600);
-    }
+    // Скролл вниз — НЕ возвращаем героя, если он уже был скрыт
 }, { passive: false });
 
 // Touch события для мобильных
@@ -887,15 +889,19 @@ window.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 window.addEventListener('touchend', (e) => {
-    if (isAnimating || !isReady) return;
+    if (isAnimating || heroDismissed) return;
     
     const touchEndY = e.changedTouches[0].clientY;
     const diff = touchStartY - touchEndY;
     
-    // Свайп вверх (открываем сайт)
+    // Свайп вверх (скрываем)
     if (diff < -100 && heroVisible) {
         isAnimating = true;
         heroVisible = false;
+        heroDismissed = true;
+        
+        sessionStorage.setItem('heroDismissed', 'true');
+        
         heroSection.classList.add('hidden');
         document.body.classList.add('hero-hidden');
         heroSection.style.display = 'none';
@@ -904,22 +910,11 @@ window.addEventListener('touchend', (e) => {
             isAnimating = false;
         }, 600);
     }
-    // Свайп вниз (возвращаем hero)
-    else if (diff > 100 && !heroVisible) {
-        isAnimating = true;
-        heroVisible = true;
-        heroSection.classList.remove('hidden');
-        heroSection.style.display = 'flex';
-        document.body.classList.remove('hero-hidden');
-        
-        setTimeout(() => {
-            isAnimating = false;
-        }, 600);
-    }
+    // Свайп вниз — НЕ возвращаем, если уже скрыт
 }, { passive: false });
 
 // Инициализация
-if (heroSection) {
+if (heroSection && !heroDismissed) {
     document.body.style.overflow = 'hidden';
 }
 
