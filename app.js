@@ -811,48 +811,32 @@ window.addEventListener('load', () => {
 
 
 // === ЗАГЛАВНЫЙ БЛОК С ПРОГРЕСС БАРОМ ===
-let heroSection, progressBar;
+// === ЗАГЛАВНЫЙ БЛОК С ЛОАДЕРОМ ===
+let heroSection, heroLoader, heroArrow;
 let heroVisible = true;
 let isAnimating = false;
 let isReady = false;
 let galleryLoaded = false;
-let progressValue = 0;
 
 // Инициализация после DOM
 document.addEventListener('DOMContentLoaded', () => {
     heroSection = document.getElementById('hero-section');
-    progressBar = document.getElementById('heroProgressBar');
+    heroLoader = document.getElementById('heroLoader');
+    heroArrow = document.getElementById('heroArrow');
     
-    // Блокируем скролл body пока герой виден
     if (heroSection) {
         document.body.classList.remove('hero-hidden');
     }
 });
 
-// Анимация прогресса
-function animateProgress() {
-    if (progressValue < 100) {
-        progressValue += 2;
-        if (progressBar) progressBar.style.width = progressValue + '%';
-        setTimeout(animateProgress, 50);
-    } else {
-        checkReady();
-    }
-}
-
 // Проверка готовности
 function checkReady() {
-    if (galleryLoaded && progressValue >= 100 && heroSection) {
+    if (galleryLoaded && heroSection && !isReady) {
         isReady = true;
         heroSection.classList.add('ready');
         console.log('✅ Hero ready! Scroll up to enter');
     }
 }
-
-// Запуск прогресса после полной загрузки
-window.addEventListener('load', () => {
-    setTimeout(animateProgress, 300);
-});
 
 // Wheel event (десктоп)
 window.addEventListener('wheel', (e) => {
