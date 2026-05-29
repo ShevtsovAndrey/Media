@@ -424,23 +424,59 @@ async function renderSortedGallery(photosSource) {
     
     console.log('✅ Сортировка завершена');
     
-    // === ИНИЦИАЛИЗАЦИЯ MASONRY (ПЛОТНАЯ УПАКОВКА) ===
-    const grids = document.querySelectorAll('.mosaic-grid');
-    grids.forEach(grid => {
-        // Уничтожаем старый инстанс, если есть
-        if (grid.masonry) grid.masonry.destroy();
-        
-        // Создаём новый
-        grid.masonry = new Masonry(grid, {
-            itemSelector: '.photo-card',
-            columnWidth: '.photo-card',
-            percentPosition: true,
-            horizontalOrder: true, // ← СОХРАНЯЕТ ПОРЯДОК СОРТИРОВКИ (слева-направо)
-            transitionDuration: 0,
-            stagger: 0
-        });
+   // === ИНИЦИАЛИЗАЦИЯ MASONRY (ПЛОТНАЯ УПАКОВКА) ===
+const grids = document.querySelectorAll('.mosaic-grid');
+grids.forEach(grid => {
+    // Уничтожаем старый инстанс, если есть
+    if (grid.masonry) grid.masonry.destroy();
+    
+    // Создаём новый
+    grid.masonry = new Masonry(grid, {
+        itemSelector: '.photo-card',
+        columnWidth: '.photo-card',
+        percentPosition: true,
+        horizontalOrder: true,
+        transitionDuration: 0,
+        stagger: 0
     });
+    
+    // === ИСПРАВЛЕНИЕ: Пересчитываем после загрузки всех изображений ===
+    const images = grid.querySelectorAll('img');
+    let loadedCount = 0;
+    
+    images.forEach(img => {
+        if (img.complete) {
+            loadedCount++;
+        } else {
+            img.addEventListener('load', () => {
+                loadedCount++;
+                if (loadedCount === images.length) {
+                    grid.masonry.layout();
+                }
+            });
+            img.addEventListener('error', () => {
+                loadedCount++;
+                if (loadedCount === images.length) {
+                    grid.masonry.layout();
+                }
+            });
+        }
+    });
+    
+    // Если все картинки уже загружены (кэш)
+    if (loadedCount === images.length && images.length > 0) {
+        setTimeout(() => grid.masonry.layout(), 100);
+    }
+    
+    // Фолбэк: если картинки не загружаются
+    setTimeout(() => {
+        if (loadedCount < images.length) {
+            grid.masonry.layout();
+        }
+    }, 2000);
+});
 }
+
 
 // === ПЕРЕСЧЁТ MASONRY ПРИ ИЗМЕНЕНИИ РАЗМЕРА ОКНА ===
 window.addEventListener('resize', () => {
