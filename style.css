@@ -275,11 +275,12 @@ body {
 }
 
 /* === МОЗАИКА — MASONRY (COLUMN-COUNT) === */
+/* === МОЗАИКА — СЕТКА С СОХРАНЕНИЕМ ПОРЯДКА === */
 #gallery.date-mode {
     height: 100vh; overflow-y: scroll; overflow-x: hidden;
     scroll-snap-type: y mandatory; scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    padding: 0; display: block !important; scroll-padding: 0;
+    -webkit-overflow-scrolling: touch; padding: 0;
+    display: block !important; scroll-padding: 0;
 }
 
 .year-section {
@@ -295,70 +296,48 @@ body {
     margin-bottom: 2vh !important; height: 18vh;
 }
 
-/* === СЕТКА: 3 КОЛОНКИ МОБИЛЬНЫЕ === */
+/* === МОБИЛЬНЫЕ: 3 КОЛОНКИ === */
 .mosaic-grid {
-    column-count: 3; column-gap: 2px;
-    width: 100%; max-width: 100%; margin: 0 auto; line-height: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    width: 100%;
+    grid-auto-flow: row; /* ← Сохраняет порядок слева-направо */
 }
 
+/* Мобильные: <3 фото → 1 колонка */
+.mosaic-grid:has(.photo-card:nth-child(2):last-child),
 .mosaic-grid:has(.photo-card:only-child) {
-    column-count: 1; display: flex; align-items: center; justify-content: center;
-    min-height: 60vh;
+    grid-template-columns: 1fr;
 }
 
-.mosaic-grid:has(.photo-card:only-child) .photo-card {
-    width: 100%; max-height: 80vh;
+/* === ДЕСКТОП: 5 КОЛОНОК === */
+@media (min-width: 1024px) {
+    .mosaic-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+    }
+    
+    /* Десктоп: динамические колонки при малом кол-ве фото */
+    .mosaic-grid:has(.photo-card:nth-child(4):last-child) { grid-template-columns: repeat(4, 1fr); }
+    .mosaic-grid:has(.photo-card:nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
+    .mosaic-grid:has(.photo-card:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
+    .mosaic-grid:has(.photo-card:only-child) { grid-template-columns: 1fr; }
 }
 
-.mosaic-grid:has(.photo-card:only-child) .photo-card img {
-    max-height: 100%;
-}
-
-.mosaic-grid:has(.photo-card:nth-child(2):last-child) { column-count: 1; }
-.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card { max-height: 50vh; }
-.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img { max-height: 50vh; }
-
+/* Карточки и изображения (100% размер, без обрезки) */
 .mosaic-grid .photo-card {
-    break-inside: avoid !important;
-    display: inline-block !important;
-    width: 100% !important; margin: 0 0 2px 0 !important;
-    padding: 0; position: relative; overflow: hidden;
+    width: 100%; position: relative; overflow: hidden;
 }
 
 .mosaic-grid .photo-card img {
     width: 100%; height: auto; display: block;
-    margin: 0; padding: 0; vertical-align: top;
-    object-fit: contain; max-height: 50vh; line-height: 0;
+    object-fit: contain; /* ← Гарантирует 100% отображение */
+    max-height: 50vh;    /* Ограничение высоты вьюпорта */
+    line-height: 0;
 }
 
-/* === ДЕСКТОП: 6 КОЛОНОК === */
-@media (min-width: 1024px) {
-    .mosaic-grid { column-count: 6; column-gap: 4px; }
-    .mosaic-grid .photo-card { margin: 0 0 4px 0 !important; }
-    .mosaic-grid .photo-card img { max-height: 50vh; }
-    
-    .mosaic-grid:has(.photo-card:only-child) {
-        column-count: 1; display: flex; align-items: center; justify-content: center;
-    }
-    .mosaic-grid:has(.photo-card:only-child) .photo-card {
-        max-height: 100vh; max-width: 100%;
-    }
-    .mosaic-grid:has(.photo-card:only-child) .photo-card img {
-        max-height: 50vh; max-width: 100%; width: auto;
-    }
-    
-    .mosaic-grid:has(.photo-card:nth-child(2):last-child) { column-count: 2; }
-    .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card {
-        max-height: 100vh; max-width: 50vw;
-    }
-    .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img {
-        max-height: 100%; max-width: 50vw;
-    }
-    
-    .mosaic-grid:not(:has(.photo-card:only-child)):not(:has(.photo-card:nth-child(2):last-child)) {
-        column-count: 6;
-    }
-}
+#gallery.date-mode > .photo-card { display: none; }
 
 #gallery.date-mode > .photo-card { display: none; }
 

@@ -369,16 +369,20 @@ async function renderSortedGallery(photosSource) {
     });
     
     // Сортировка по HSL внутри года
-    Object.keys(groups).forEach(year => {
-        groups[year].sort((a, b) => {
-            const aHue = (a.analysis.hue + 120) % 360, bHue = (b.analysis.hue + 120) % 360, hueDiff = aHue - bHue;
-            if (Math.abs(hueDiff) < 60) {
-                const scoreDiff = b.analysis.simplicityScore - a.analysis.simplicityScore;
-                if (Math.abs(scoreDiff) > 0.1) return scoreDiff;
-            }
-            return hueDiff;
-        });
+Object.keys(groups).forEach(year => {
+    groups[year].sort((a, b) => {
+        // 1. Яркость (Lightness): от 100% к 0% (светлые в начало)
+        const lightDiff = b.analysis.lightness - a.analysis.lightness;
+        if (Math.abs(lightDiff) > 5) return lightDiff;
+
+        // 2. Насыщенность (Saturation): от ярких к блёклым
+        const satDiff = b.analysis.saturation - a.analysis.saturation;
+        if (Math.abs(satDiff) > 5) return satDiff;
+
+        // 3. Оттенок (Hue): для мягкой группировки похожих цветов
+        return a.analysis.hue - b.analysis.hue;
     });
+});
     
     // Рендеринг
     gallery.classList.add('date-mode');
