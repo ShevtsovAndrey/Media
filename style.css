@@ -46,6 +46,20 @@
     filter: invert(1);
 }
 
+
+/* ЛОГОТИП — ПОЛНОСТЬЮ НЕКЛИКАБЕЛЬНЫЙ */
+.hero-logo,
+.hero-logo img {
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-user-drag: none !important;
+    -webkit-touch-callout: none !important;
+    touch-action: none !important;
+    cursor: default !important;
+}
+
+
 #hero-section.dragging { 
     cursor: grabbing; 
 }
@@ -64,17 +78,16 @@
 }
 
 #statusText {
-    color: var(--bg);
-    font-size: 14px;
+    color: white;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 2px;
 }
 
 .status-loader {
     width: 24px;
     height: 24px;
     animation: spin 1s linear infinite;
-    filter: invert(0);
+    filter: invert(1);
 }
 
 /* Стрелка */
@@ -169,21 +182,23 @@ body {
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
     transition: opacity 0.25s ease;
-    pointer-events: none; /* Пропускаем клики сквозь оверлей */
+    /* ВСЕГДА пропускаем клики/драг сквозь оверлей на десктопе */
+    pointer-events: none !important;
     z-index: 15;
 }
 
-/* ДЕСКТОП: показываем при наведении */
-@media (hover: hover) and (pointer: fine) {
-    .photo-card:hover .delete-overlay {
-        opacity: 1;
-    }
+.delete-btn, .edit-meta-btn {
+    pointer-events: auto !important;
 }
 
-/* МОБИЛЬНЫЕ: показываем через класс .show-menu */
-.photo-card.show-menu .delete-overlay {
-    opacity: 1;
-    pointer-events: auto; /* Блокируем клики когда меню активно */
+/* На мобильных: когда меню открыто, оверлей блокирует клики (чтобы закрыть меню) */
+@media (hover: none), (pointer: coarse) {
+    .photo-card.show-menu .delete-overlay {
+        pointer-events: auto !important;
+    }
+    .photo-card.show-menu .delete-overlay > * {
+        pointer-events: auto !important;
+    }
 }
 
 .photo-card img {
@@ -195,7 +210,9 @@ body {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     user-select: none;
-    pointer-events: none;
+
+    pointer-events: auto; /* Разрешаем клик по изображению */
+    cursor: pointer;
     -webkit-user-drag: none;  /* Safari/Chrome */
     -webkit-touch-callout: none; /* iOS: убирает меню при долгом тапе на img */
 }
@@ -432,6 +449,18 @@ body {
     }
     .hero-logo {
     mix-blend-mode: multiply;
+}
+#statusText {
+    color: rgb(0, 0, 0);
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.status-loader {
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    filter: invert(0);
 }
 
 
