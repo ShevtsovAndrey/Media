@@ -290,9 +290,6 @@ function renderCard(photo, index, isNoDate = false, target = null) {
     img.loading = 'lazy';
     img.style.cursor = 'pointer';
     img.onerror = () => { card.style.display = 'none'; };
-img.draggable = false;
-img.addEventListener('dragstart', (e) => e.preventDefault());
-img.addEventListener('dragend', (e) => e.preventDefault());
 
     // === ОТКРЫТИЕ ЛАЙТБОКСА ===
     const openLightboxHandler = (e) => {
@@ -1367,8 +1364,8 @@ function disableSnap() {
 }
 
 galleryEl.addEventListener('mousedown', (e) => {
-    // Игнорируем клики по изображениям, кнопкам и оверлеям
-    if (e.target.closest('img, .delete-overlay, .lightbox, .add-btn, .sort-btn')) return;
+    // Игнорируем клики по кнопкам и оверлеям
+    if (e.target.closest('.delete-overlay, .lightbox, .add-btn, .sort-btn')) return;
     if (!galleryEl.classList.contains('date-mode')) return;
     
     isGalleryDrag = true;
@@ -1376,6 +1373,7 @@ galleryEl.addEventListener('mousedown', (e) => {
     dragStartY = e.pageY;
     dragScrollStart = galleryEl.scrollTop;
     
+    // Отключаем снап для свободного скролла
     disableSnap();
     galleryEl.style.cursor = 'grabbing';
 });
