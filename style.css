@@ -503,6 +503,7 @@ body {
     overflow-y: scroll;
     overflow-x: hidden;
     scroll-snap-type: y mandatory;
+    scroll-behavior: smooth; /* Плавная прокрутка */
     -webkit-overflow-scrolling: touch;
     padding: 0;
     display: block !important;

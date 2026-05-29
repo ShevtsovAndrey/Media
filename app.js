@@ -1318,65 +1318,6 @@ window.addEventListener('load', () => {
     }, 1000);
 });
 
-
-// === MOUSE DRAG SCROLL + ЗАЩИТА ОТ СЛУЧАЙНЫХ КЛИКОВ ===
-const galleryEl = document.getElementById('gallery');
-let isGalleryDrag = false;
-let dragStartY = 0;
-let dragScrollStart = 0;
-let dragMoved = false;
-
-galleryEl.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.delete-overlay, .lightbox, .add-btn, .sort-btn')) return;
-    if (!galleryEl.classList.contains('date-mode')) return;
-    
-    isGalleryDrag = true;
-    dragMoved = false;
-    dragStartY = e.pageY;
-    dragScrollStart = galleryEl.scrollTop;
-    galleryEl.style.cursor = 'grabbing';
-    galleryEl.style.scrollSnapType = 'none'; // Отключаем снап во время тяги
-});
-
-window.addEventListener('mousemove', (e) => {
-    if (!isGalleryDrag) return;
-    
-    // Порог 10px: отличаем клик от перетаскивания
-    if (Math.abs(e.pageY - dragStartY) > 10) dragMoved = true;
-    
-    if (dragMoved) {
-        e.preventDefault(); // Блокируем выделение текста
-        galleryEl.scrollTop = dragScrollStart - (e.pageY - dragStartY);
-    }
-});
-
-window.addEventListener('mouseup', () => {
-    if (!isGalleryDrag) return;
-    isGalleryDrag = false;
-    galleryEl.style.cursor = '';
-    galleryEl.style.scrollSnapType = 'y mandatory'; // Возвращаем снап
-});
-
-// ПЕРЕХВАТ КЛИКА: если было перетаскивание — блокируем открытие фото
-galleryEl.addEventListener('click', (e) => {
-    if (dragMoved) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        dragMoved = false; // Сбрасываем флаг
-    }
-}, true); // true = capture phase (перехватываем ДО обработчиков фото)
-
-galleryEl.addEventListener('mouseleave', () => {
-    if (isGalleryDrag) {
-        isGalleryDrag = false;
-        dragMoved = false;
-        galleryEl.style.cursor = '';
-        galleryEl.style.scrollSnapType = 'y mandatory';
-    }
-});
-
-
 // === УПРАВЛЕНИЕ ТЕМОЙ ИЗ КОНСОЛИ ===
 window.setTheme = function(mode) {
   const body = document.body;
@@ -1394,3 +1335,104 @@ document.addEventListener('DOMContentLoaded', () => {
   const saved = localStorage.getItem('theme-force');
   if (saved) window.setTheme(saved);
 });
+
+
+
+
+
+
+
+
+// === ДВОЙНОЙ СКРОЛЛ: DRAG (свободный) + WHEEL (снап по годам) ===
+const galleryEl = document.getElementById('gallery');
+let isGalleryDrag = false;
+let dragStartY = 0;
+let dragScrollStart = 0;
+let dragMoved = false;
+let wheelSnapTimeout = null;
+
+// Включаем снап по умолчанию
+function enableSnap() {
+    if (galleryEl.classList.contains('date-mode')) {
+        galleryEl.style.scrollSnapType = 'y mandatory';
+    }
+}
+
+// Отключаем снап для свободного драга
+function disableSnap() {
+    galleryEl.style.scrollSnapType = 'none';
+}
+
+galleryEl.addEventListener('mousedown', (e) => {
+    // Игнорируем клики по кнопкам и оверлеям
+    if (e.target.closest('.delete-overlay, .lightbox, .add-btn, .sort-btn')) return;
+    if (!galleryEl.classList.contains('date-mode')) return;
+    
+    isGalleryDrag = true;
+    dragMoved = false;
+    dragStartY = e.pageY;
+    dragScrollStart = galleryEl.scrollTop;
+    
+    // Отключаем снап для свободного скролла
+    disableSnap();
+    galleryEl.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isGalleryDrag) return;
+    
+    // Порог 10px: отличаем клик от драга
+    if (Math.abs(e.pageY - dragStartY) > 10) dragMoved = true;
+    
+    if (dragMoved) {
+        e.preventDefault(); // Блокируем выделение текста
+        galleryEl.scrollTop = dragScrollStart - (e.pageY - dragStartY);
+    }
+});
+
+window.addEventListener('mouseup', () => {
+    if (!isGalleryDrag) return;
+    isGalleryDrag = false;
+    galleryEl.style.cursor = '';
+    
+    // Возвращаем снап с небольшой задержкой
+    setTimeout(enableSnap, 100);
+});
+
+// ПЕРЕХВАТ КЛИКА: если был драг — блокируем открытие фото
+galleryEl.addEventListener('click', (e) => {
+    if (dragMoved) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        dragMoved = false;
+    }
+}, true); // capture phase
+
+galleryEl.addEventListener('mouseleave', () => {
+    if (isGalleryDrag) {
+        isGalleryDrag = false;
+        dragMoved = false;
+        galleryEl.style.cursor = '';
+        setTimeout(enableSnap, 100);
+    }
+});
+
+// === КОЛЁСИКО: СНАП ПО ГОДАМ ===
+galleryEl.addEventListener('wheel', (e) => {
+    // Если идёт драг — игнорируем колесо
+    if (isGalleryDrag) return;
+    
+    // Если снап уже активен — ничего не делаем (браузер сам проснапит)
+    // Если снап отключён (после драга) — включаем его обратно
+    if (galleryEl.style.scrollSnapType !== 'y mandatory') {
+        enableSnap();
+    }
+    
+    // Дебаунс: если колесо крутят быстро, не дёргаем снап лишний раз
+    clearTimeout(wheelSnapTimeout);
+    wheelSnapTimeout = setTimeout(() => {
+        // После окончания прокрутки убеждаемся, что снап включён
+        enableSnap();
+    }, 150);
+}, { passive: true });
