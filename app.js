@@ -342,15 +342,27 @@ function rgbToHSL(r, g, b) {
     return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
-// === НОВЫЙ: ВЫЧИСЛЕНИЕ ВИЗУАЛЬНОГО СКОРА (УСИЛЕННАЯ ЯРКОСТЬ) ===
+
+// === ВИЗУАЛЬНЫЙ СКОР: Яркость 50 + Теплота 20 + Насыщенность 15 + Оттенок 15 ===
 function computeVisualScore(hue, saturation, lightness) {
-    // hue: 0-360 → 0-20 (оттенок, минимальный вес)
-    // saturation: 0-100 → 0-20 (насыщенность, средний вес)
-    // lightness: 0-100 → 60-0 (яркость, ДОМИНИРУЮЩИЙ вес, инвертируем)
-    const hScore = (hue / 360) * 20;
-    const sScore = (saturation / 100) * 20;
-    const lScore = ((100 - lightness) / 100) * 60; // ← ЯРКОСТЬ ГЛАВНАЯ!
-    return hScore + sScore + lScore; // Максимум 100
+    // 1. ЯРКОСТЬ (50%): светлые/белые → тёмные/чёрные
+    const lightnessScore = ((100 - lightness) / 100) * 50;
+    
+    // 2. ТЕПЛОТА (20%): холодные (синие ~240°) → тёплые (оранжевые/красные)
+    const distanceFromBlue = Math.min(
+        Math.abs(hue - 240), 
+        360 - Math.abs(hue - 240)
+    );
+    const warmth = distanceFromBlue / 120; // 0.0 (холодный) → 1.0 (тёплый)
+    const warmthScore = warmth * 20;
+    
+    // 3. НАСЫЩЕННОСТЬ (15%): блёклые/серые → сочные/насыщенные
+    const saturationScore = (saturation / 100) * 15;
+    
+    // 4. ОТТЕНОК (15%): плавное распределение по спектру (0° → 360°)
+    const hueScore = (hue / 360) * 15;
+    
+    return lightnessScore + warmthScore + saturationScore + hueScore; // Максимум 100
 }
 
 // === СОРТИРОВКА + РЕНДЕРИНГ + MASONRY ===
