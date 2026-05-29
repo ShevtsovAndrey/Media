@@ -341,7 +341,7 @@ function renderCard(photo, index, isNoDate = false, target = null) {
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.title = 'Удалить';
-        delBtn.innerHTML = '<img src="delete.png" alt="Удалить">';
+        delBtn.innerHTML = '<img src="icons/delete.png" alt="Удалить">';
         delBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             deletePhoto(photo.key, photo.title, card);
@@ -350,7 +350,7 @@ function renderCard(photo, index, isNoDate = false, target = null) {
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-meta-btn';
         editBtn.title = 'Редактировать год';
-        editBtn.innerHTML = '<img src="edit.png">';
+        editBtn.innerHTML = '<img src="icons/edit.png">';
         editBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             let currentVal = 'нет данных';

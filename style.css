@@ -151,12 +151,21 @@ body {
     max-width: 100%; 
 }
 
-.photo-card {
-    position: relative; 
-    flex: 0 1 auto; 
-    max-width: 50%; 
-    min-width: 20vw;
-    overflow: hidden; 
+.photo-card .delete-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    opacity: 0;
+    background: var(--bgoverlay);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    z-index: 15;
 }
 
 .photo-card img {
@@ -170,15 +179,15 @@ body {
     user-select: none;
 }
 
-.photo-card:hover .delete-overlay { 
-    opacity: 1; 
+.photo-card:hover .delete-overlay,
+.photo-card:active .delete-overlay {
+    opacity: 1;
     pointer-events: auto;
-    cursor:default;
 }
 
 /*КНОПКИ ВНИЗУ*/
 
-.add-btn, .sort-btn {
+.add-btn {
     position: fixed; 
     bottom: 2vh; 
     right: 2vw; 
@@ -198,10 +207,6 @@ body {
     justify-content: center;
     transition: all 0.2s ease;
     z-index: 100; 
-}
-/*ДОПОЛНЕНИЕ ДЛЯ ВЫРАВНИВАНИЯ*/
-.sort-btn {
-left: 2vw;
 }
 
 .add-btn:hover, .sort-btn:hover {
@@ -317,18 +322,6 @@ left: 2vw;
     }
 }
 
-/*иконки*/
-
-.sort-btn img,
-.delete-btn img,
-.edit-meta-btn img {
-    width: 50%;
-    height: 50%;
-    object-fit: contain;
-    pointer-events: none; /* Клик проходит сквозь картинку на кнопку */
-filter: invert(1);
-}
-
 /* Картинка лоадера внутри кнопки */
 .add-btn .loading-icon {
     width: 50%;
@@ -359,26 +352,51 @@ filter: invert(1);
 }
 
 .delete-btn, .edit-meta-btn {
-    width: 24px;
-    height: 24px;
-    background: rgb(255 255 255 / 20%);
-    border: none !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
-    transition: transform 0.2s !important;
+    width: 48px;
+    height: 48px;
+    border: none;
     border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
-.edit-meta-btn:hover {
-    transform: scale(1.02) !important;
-    background: rgb(255 255 255 / 20%) !important;
+
+.delete-btn:hover, .edit-meta-btn:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.3);
 }
+
+.delete-btn:active, .edit-meta-btn:active {
+    transform: scale(0.95);
+}
+
+.delete-btn img,
 .edit-meta-btn img {
     width: 50%;
     height: 50%;
+    object-fit: contain;
+    pointer-events: none; /* Клик проходит сквозь картинку на кнопку */
+filter: invert(1);
 }
+
+
+
+
+
+
+
+
+
+
 
             /*ВЫ ВХОДИТЕ В СВЕТЛУЮ ТЕМУ! АККУРАТНЕЕ С НАСТРОЙКАМИ!*/
 
