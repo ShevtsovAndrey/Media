@@ -436,7 +436,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 function dismissHero() { if (!heroSection || heroDismissed) return; heroDismissed = true; heroSection.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'; heroSection.style.transform = 'translateY(-100%)'; setTimeout(() => { heroSection.classList.add('hidden'); heroSection.style.display = 'none'; document.body.style.overflow = ''; }, 400); }
-function markEverythingReady() { isEverythingReady = true; if (heroSection) heroSection.classList.add('ready'); }
+function markEverythingReady() {
+    isEverythingReady = true;
+    
+    // === ИСПРАВЛЕНО: явно переключаем статус на 'ready' ===
+    setHeroStatus('ready');
+    
+    if (heroSection) heroSection.classList.add('ready');
+}
 
 // === ТЕМА ИЗ КОНСОЛИ ===
 window.setTheme = function(mode) {
