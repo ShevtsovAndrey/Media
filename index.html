@@ -6,40 +6,31 @@
     <title>Shevtsov Media</title>
     <link rel="stylesheet" href="style.css">
 </head>
-   <!-- Заглавный блок -->
+
+<!-- Заглавный блок (фиксированный, может быть до body) -->
 <div id="hero-section">
     <div class="hero-content">
-        <img src="icons/logo.png" alt="Logo" class="hero-logo" draggable="false"  >
+        <img src="icons/logo.png" alt="Logo" class="hero-logo" draggable="false">
     </div>
-    
-    <!-- Простой статус с лоадером -->
     <div class="hero-status" id="heroStatus">
         <span id="statusText">Загрузка</span>
         <img src="icons/loader.png" alt="" class="status-loader">
     </div>
-    
-    <!-- Стрелка (показывается когда готово) -->
     <div class="hero-arrow" id="heroArrow">
         <img src="icons/arrowdown.png" alt="Scroll">
     </div>
 </div>
     
 <body>
-    <!-- БЛЮР ДЛЯ ДРАГАНДРОП -->
     <div id="dragOverlay" class="drag-overlay">Drop photo and load it</div>
-    
-    <!-- Основной контент -->
     <main id="gallery" class="gallery"></main>
-    
     <button id="addBtn" class="add-btn" style="display: none;">+</button>
-    <!-- БЛЮР ДЛЯ ДРАГАНДРОП -->
-    <!-- <button id="sortBtn" class="sort-btn" title="Сменить сортировку">⟳</button> -->
     <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
 
-    <!-- AWS SDK v2 -->
+    <!-- Скрипты ВНУТРИ body -->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1479.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.min.js"></script>
-    <script src="app.js"></script>
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

@@ -1,26 +1,16 @@
 :root {
-    /* === ЦВЕТА === */
     --bg: #010101; 
-    --bg-light: #fafafa;/* Фон сайта */
+    --bg-light: #fafafa;
     --text: #000000;
-    --text-light: #000000; /* Цвет текста */ 
-    --accent: #00ffe7;    /* Цвет кнопки редактирования */
+    --text-light: #000000;
+    --accent: #00ffe7;
     --bgoverlay: hsl(0deg 0% 0% / 30%);
-    --bgoverlay-light: hsl(0deg 0% 100% / 30%); 
-    /* === РАЗМЕРЫ  === */
-    --br: 50%;              /* Скругление кнопок */
+    --bgoverlay-light: hsl(0deg 0% 100% / 30%);
+    --br: 50%;
 }
 
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-* { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
-}
-
-
-
-/*                                              === ЗАГЛАВНЫЙ БЛОК === */
 /* === ЗАГЛАВНЫЙ БЛОК === */
 #hero-section {
     position: fixed;
@@ -36,100 +26,66 @@
 }
 
 .hero-content {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10vh 4vw;
-    box-sizing: border-box;
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 10vh 4vw; box-sizing: border-box;
     filter: invert(1);
 }
 
-
-/* ЛОГОТИП — ПОЛНОСТЬЮ НЕКЛИКАБЕЛЬНЫЙ */
-.hero-logo,
-.hero-logo img {
+.hero-logo, .hero-logo img {
     pointer-events: none !important;
     user-select: none !important;
-    -webkit-user-select: none !important;
     -webkit-user-drag: none !important;
     -webkit-touch-callout: none !important;
     touch-action: none !important;
     cursor: default !important;
 }
 
+#hero-section.dragging { cursor: grabbing; }
+#hero-section.hidden { transform: translateY(-100%); }
 
-#hero-section.dragging { 
-    cursor: grabbing; 
-}
-#hero-section.hidden { 
-    transform: translateY(-100%); 
-}
-
-/* Простой статус: текст + лоадер в линию */
 .hero-status {
-    position: absolute;
-    bottom: 2vh;
-    left: 50%;
+    position: absolute; bottom: 2vh; left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    align-items: center;
+    display: flex; align-items: center; gap: 8px;
 }
 
 #statusText {
-    color: white;
-    font-size: 12px;
-    text-transform: uppercase;
+    color: #fff; font-size: 12px; text-transform: uppercase;
 }
 
 .status-loader {
-    width: 24px;
-    height: 24px;
+    width: 24px; height: 24px;
     animation: spin 1s linear infinite;
     filter: invert(1);
 }
 
-/* Стрелка */
 .hero-arrow {
-    position: absolute;
-    bottom: 2vh;
-    left: 50%;
+    position: absolute; bottom: 2vh; left: 50%;
     transform: translateX(-50%);
-    width: 24px;
-    height: 24px;
-    opacity: 0;
-    pointer-events: none;
+    width: 24px; height: 24px;
+    opacity: 0; pointer-events: none;
     transition: opacity 0.3s;
 }
 
 .hero-arrow img {
-    width: 100%;
-    height: 100%;
+    width: 100%; height: 100%;
     filter: invert(1);
     animation: bounce 1.5s ease-in-out infinite;
 }
 
-/* Когда готово */
-#hero-section.ready .hero-status { 
-    display: none; 
-}
-#hero-section.ready .hero-arrow { 
-    opacity: 1; 
-    pointer-events: auto; 
-}
+#hero-section.ready .hero-status { display: none; }
+#hero-section.ready .hero-arrow { opacity: 1; pointer-events: auto; }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes bounce { 
-    0%, 100% { transform: translateX(-50%) translateY(0); } 
-    50% { transform: translateX(-50%) translateY(-8px); } 
+@keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-8px); }
 }
 
-/* Блокируем drag фото */
+/* Блокируем drag */
 .gallery, .photo-card, .photo-card img, .hero-content {
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-user-drag: none;
+    user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
 }
 
 @media (max-width: 768px) {
@@ -137,540 +93,278 @@
     #statusText { font-size: 12px; }
 }
 
-
-
-
-
-
-
-
-
-body { 
-    background: var(--bg); 
-    font-family: system-ui, -apple-system, sans-serif; 
-    overflow-x: hidden; 
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-user-drag: none;
+body {
+    background: var(--bg);
+    font-family: system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
 }
 
+/* === ГАЛЕРЕЯ === */
+.gallery { display: flex; flex-wrap: wrap; justify-content: center; max-width: 100%; }
 
-
-
-
-/* ====================================================== ГАЛЕРЕЯ И ПРОЧЕЕ*/
-
-
-
-.gallery {
-    display: flex; 
-    flex-wrap: wrap; 
-    justify-content: center;
-    max-width: 100%; 
-}
-
+/* Оверлей админа */
 .photo-card .delete-overlay {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    opacity: 0;
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    gap: 24px; opacity: 0;
+    background: rgba(0,0,0,0.2);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
     transition: opacity 0.25s ease;
-    /* ВСЕГДА пропускаем клики/драг сквозь оверлей на десктопе */
     pointer-events: none !important;
     z-index: 15;
 }
 
-.delete-btn, .edit-meta-btn {
-    pointer-events: auto !important;
-}
+.delete-btn, .edit-meta-btn { pointer-events: auto !important; }
 
-/* На мобильных: когда меню открыто, оверлей блокирует клики (чтобы закрыть меню) */
 @media (hover: none), (pointer: coarse) {
-    .photo-card.show-menu .delete-overlay {
-        pointer-events: auto !important;
-    }
+    .photo-card.show-menu .delete-overlay,
     .photo-card.show-menu .delete-overlay > * {
         pointer-events: auto !important;
     }
 }
 
+/* Изображения */
 .photo-card img {
-    display: block; 
-    width: 100%; 
-    height: auto; 
-    max-height: 50vh;
-    object-fit: contain; transition: transform 0.3s ease;
+    display: block; width: 100%; height: auto;
+    max-height: 50vh; object-fit: contain;
+    transition: transform 0.3s ease;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     user-select: none;
-
-    pointer-events: auto; /* Разрешаем клик по изображению */
-    cursor: pointer;
-    -webkit-user-drag: none;  /* Safari/Chrome */
-    -webkit-touch-callout: none; /* iOS: убирает меню при долгом тапе на img */
+    pointer-events: auto; cursor: pointer;
+    -webkit-user-drag: none; -webkit-touch-callout: none;
 }
 
 .photo-card:hover .delete-overlay,
-.photo-card:active .delete-overlay {
-    opacity: 1;
-    pointer-events: auto;
-}
+.photo-card:active .delete-overlay { opacity: 1; pointer-events: auto; }
 
-
-/* Кнопка редактирования рядом с удалением */
+/* Кнопки админа */
 .delete-overlay {
-    position: absolute; 
-    display:flex; 
-    gap:6px; 
-    align-items:flex-start;
-    justify-content: flex-start; 
-    opacity: 0.3;
-    transition: opacity 0.2s;
-    pointer-events: none;
-    z-index: 9999;    
+    position: absolute; display: flex; gap: 6px;
+    align-items: flex-start; justify-content: flex-start;
+    opacity: 0.3; transition: opacity 0.2s;
+    pointer-events: none; z-index: 9999;
 }
 
 .delete-btn, .edit-meta-btn {
-    width: 48px;
-    height: 48px;
-    border: none;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    padding: 0;
-    transition: transform 0.2s ease;
-    pointer-events: auto; /* Кнопки всегда кликабельны */
-    user-select: none;
+    width: 48px; height: 48px; border: none; background: transparent;
+    box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+    border-radius: 0; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; transition: transform 0.2s ease;
+    pointer-events: auto; user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
-.delete-btn:hover, .edit-meta-btn:hover {
-    transform: scale(1.15);
-}
-
-.delete-btn:active, .edit-meta-btn:active {
-    transform: scale(0.95);
-}
+.delete-btn:hover, .edit-meta-btn:hover { transform: scale(1.15); }
+.delete-btn:active, .edit-meta-btn:active { transform: scale(0.95); }
 
 .delete-btn img, .edit-meta-btn img {
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
-    pointer-events: none;
-    filter: invert(1);
+    width: 48px; height: 48px; object-fit: contain;
+    pointer-events: none; filter: invert(1);
 }
 
 @media (prefers-color-scheme: light) {
     .delete-btn img, .edit-meta-btn img { filter: invert(0); }
-    .photo-card .delete-overlay { background: rgba(255, 255, 255, 0.15); }
+    .photo-card .delete-overlay { background: rgba(255,255,255,0.15); }
 }
 
-
-
-
-
-/*КНОПКИ ВНИЗУ*/
-
+/* Кнопка + */
 .add-btn {
-    position: fixed; 
-    bottom: 2vh; 
-    right: 2vw; 
-    width: 48px; 
-    height: 48px;
+    position: fixed; bottom: 2vh; right: 2vw;
+    width: 48px; height: 48px;
     background: var(--bgoverlay);
-    backdrop-filter: blur(3px); /* размытие фона под кнопкой */
-    -webkit-backdrop-filter: blur(6px); /* для Safari/iOS */
-    border: 0px solid rgb(255 255 255 / 10%); /* тонкая светлая рамка */
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2); /* мягкая тень */
-    border-radius: var(--br);
-    color: white; 
-    border-color: rgb(255 255 255);
-    font-size: 24px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    transition: all 0.2s ease;
-    z-index: 100; 
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(6px);
+    border: 0px solid rgb(255 255 255 / 10%);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+    border-radius: var(--br); color: #fff;
+    font-size: 24px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; z-index: 100;
 }
 
-.add-btn:hover {
-    transform: scale(1.05);
-    background: rgba(255, 255, 255, 0.1); /* чуть ярче при наведении */
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-}
-
+.add-btn:hover { transform: scale(1.05); background: rgba(255,255,255,0.1); }
 .add-btn:disabled {
-    background: rgba(85, 85, 85, 0.3);
-    backdrop-filter: blur(8px);
-    cursor: not-allowed; 
-    transform: none;
-    box-shadow: none;
+    background: rgba(85,85,85,0.3); backdrop-filter: blur(8px);
+    cursor: not-allowed; transform: none; box-shadow: none;
 }
+.add-btn:active { transform: scale(0.95); }
 
-.add-btn:active { 
-    transform: scale(0.95); 
-}
+.loading { color: #666; padding: 40px; text-align: center; width: 100%; z-index: 99; }
 
-.loading { 
-    color: #666; 
-    padding: 40px; 
-    text-align: center; 
-    width: 100%; 
-    z-index: 99;
-}
-
-/* Лайтбокс с размытием */
+/* Лайтбокс */
 .lightbox {
-    position: fixed;
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    z-index: 99;
-    opacity: 0; 
-    pointer-events: none;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 99; opacity: 0; pointer-events: none;
     transition: opacity 0.2s ease;
 }
-.lightbox.active {
-    background: var(--bgoverlay);
-    opacity: 1; 
-    pointer-events: auto;
-}
+
+.lightbox.active { background: var(--bgoverlay); opacity: 1; pointer-events: auto; }
+
 .lightbox img {
-    max-width: 90vw; 
-    max-height: 90vh;
-    object-fit: contain;
-    box-shadow: none; 
-    border: 6px;
-    user-select: none;
-    z-index: 100;
-    border-radius: 2px;
+    max-width: 90vw; max-height: 90vh; object-fit: contain;
+    box-shadow: none; border: 6px; user-select: none;
+    z-index: 100; border-radius: 2px;
 }
 
 @media (max-width: 768px) {
-    .photo-card { 
-        max-width: 100vw; 
-    }
-    .photo-card img { 
-        max-height: 50vh; 
-    }
+    .photo-card { max-width: 100vw; }
+    .photo-card img { max-height: 50vh; }
 }
 
-/* Drag & Drop оверлей */
+/* Drag & Drop */
 .drag-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.15); /* Очень лёгкое затемнение */
-    backdrop-filter: blur(8px); /* Лёгкий блюр фона */
-    -webkit-backdrop-filter: blur(8px); /* Для Safari/iOS */
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.15); backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex; align-items: center; justify-content: center;
-    z-index: 100; /* Выше всего, включая лайтбокс */
-    opacity: 0; pointer-events: none;
+    z-index: 100; opacity: 0; pointer-events: none;
     transition: opacity 0.25s ease;
-    color: #fff;
-    font-size: 22px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    color: #fff; font-size: 22px; font-weight: 500;
+    letter-spacing: 0.5px; text-shadow: 0 2px 12px rgba(0,0,0,0.6);
     user-select: none;
 }
-.drag-overlay.active {
-    opacity: 1; pointer-events: auto;
+
+.drag-overlay.active { opacity: 1; pointer-events: auto; }
+
+/* Заголовки годов */
+.year-header {
+    width: 100%; text-align: center; color: #fff;
+    font-size: clamp(24px, 30vw, 120px);
+    font-weight: 200; margin: 4vh;
+    text-transform: uppercase; opacity: 0.8;
+    pointer-events: none; user-select: none;
+    animation: fadeInYear 0.2s linear;
 }
 
-/* Картинка лоадера внутри кнопки */
+@keyframes fadeInYear {
+    from { opacity: 0; } to { opacity: 0.8; }
+}
+
 .add-btn .loading-icon {
-    width: 50%;
-    height: 50%;
-    object-fit: contain;
-    animation: spin 1s linear infinite; /* Крутится бесконечно */
-    pointer-events: none;
-    filter: invert(1);
-}
-
-@keyframes spin {
-    100% { transform: rotate(360deg); }
-}
-
-
-            /*ВЫ ВХОДИТЕ В СВЕТЛУЮ ТЕМУ! АККУРАТНЕЕ С НАСТРОЙКАМИ!*/
-
-
-@media (prefers-color-scheme: light) {
-
-    .hero-loader img,
-    .hero-arrow img{
-        filter: invert(0);
-    }
-
-    .hero-content {
-    background: var(--bg-light);
-    filter: invert(0);
-    }
-    .hero-logo {
-    mix-blend-mode: multiply;
-}
-#statusText {
-    color: rgb(0, 0, 0);
-    font-size: 12px;
-    text-transform: uppercase;
-}
-
-.status-loader {
-    width: 24px;
-    height: 24px;
+    width: 50%; height: 50%; object-fit: contain;
     animation: spin 1s linear infinite;
-    filter: invert(0);
+    pointer-events: none; filter: invert(1);
 }
 
-
-    /* ТЕЛО */
+/* Светлая тема */
+@media (prefers-color-scheme: light) {
+    .hero-loader img, .hero-arrow img { filter: invert(0); }
+    .hero-content { background: var(--bg-light); filter: invert(0); }
+    .hero-logo { mix-blend-mode: multiply; }
+    #statusText { color: #000; }
+    .status-loader { filter: invert(0); }
     
-    body {
-        background: var(--bg-light);
-        color: #e0e0e0;
-    }
+    body { background: var(--bg-light); color: #e0e0e0; }
+    .year-header { color: var(--text-light); text-shadow: none; }
     
-                        /* Заголовки годов */
-   
-
-    /* Плавающие кнопки (+ и сортировка) */
-    .add-btn {
-        background: var(--bgoverlay-light);
-        color: var(--text-light);
-    }
-    .add-btn:hover {
-        background: var(--bgoverlay-light);
-    }
-    .add-btn .loading-icon {
-        filter: invert(0) !important;
-    }
-
-.edit-meta-btn ,
-    .delete-btn {
-        background: transparent;
-        filter: invert(1);
-    }
+    .add-btn { background: var(--bgoverlay-light); color: var(--text-light); }
+    .add-btn:hover { background: var(--bgoverlay-light); }
+    .add-btn .loading-icon { filter: invert(0) !important; }
     
-    .edit-meta-btn img,
-    .delete-btn img{
-        filter: invert(0);
-    }
-
-    /* Drag & Drop оверлей */
-    .drag-overlay {
-        background: rgba(255, 255, 255, 0.75);
-        color: #000000;
-        text-shadow: none;
-    }
-
-    /* Текст загрузки */
-    .loading {
-        color: #333333;
-    }
-
-    .lightbox.active {
-    background: var(--bgoverlay-light);
-    opacity: 1; 
-    pointer-events: auto;
-}
-
-    /* Группа "-" (неизвестные) */
+    .edit-meta-btn, .delete-btn { background: transparent; filter: invert(1); }
+    .edit-meta-btn img, .delete-btn img { filter: invert(0); }
+    
+    .drag-overlay { background: rgba(255,255,255,0.75); color: #000; text-shadow: none; }
+    .loading { color: #333; }
+    .lightbox.active { background: var(--bgoverlay-light); }
     .year-header.unknown-header {
-        background: rgba(255, 100, 100, 0.15);
-        color: #cc0000;
-        border-left-color: #cc0000;
+        background: rgba(255,100,100,0.15); color: #cc0000; border-left-color: #cc0000;
     }
 }
 
-
-
-/* === МОЗАИКА — MASONRY (БЕЗ РАЗРЫВОВ) === */
-
+/* === МОЗАИКА — MASONRY (COLUMN-COUNT) === */
 #gallery.date-mode {
-    height: 100vh;
-    overflow-y: scroll;
-    overflow-x: hidden;
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
+    height: 100vh; overflow-y: scroll; overflow-x: hidden;
+    scroll-snap-type: y mandatory; scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    padding: 0;
-    display: block !important;
-    scroll-padding: 0;
+    padding: 0; display: block !important; scroll-padding: 0;
 }
 
 .year-section {
-    height: auto;
-    min-height: 80vh;
-    width: 100%;
-    scroll-snap-align: start;
-    padding: 0; /* Исправлено: auto не валидно для padding */
-    box-sizing: border-box;
+    height: auto; min-height: 80vh; width: 100%;
+    scroll-snap-align: start; padding: 0; box-sizing: border-box;
 }
 
-/* === ЗАГОЛОВОК === */
 .year-section .year-header {
-    width: 100%;
-    text-align: center;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    font-size: 20vh !important;
-    font-weight: 200;
-    line-height: 1;
-    margin: 2vh !important;
-    padding: 0 !important;
-    margin-bottom: 2vh !important;
-    height: 18vh;
+    width: 100%; text-align: center;
+    display: flex !important; align-items: center; justify-content: center;
+    font-size: 20vh !important; font-weight: 200; line-height: 1;
+    margin: 2vh !important; padding: 0 !important;
+    margin-bottom: 2vh !important; height: 18vh;
 }
 
-/* === МОЗАИКА: 3 КОЛОНКИ (МОБИЛЬНЫЕ) === */
+/* === СЕТКА: 3 КОЛОНКИ МОБИЛЬНЫЕ === */
 .mosaic-grid {
-    column-count: 3;
-    column-gap: 2px;
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto; /* Гарантирует центрирование */
-    line-height: 0;
+    column-count: 3; column-gap: 2px;
+    width: 100%; max-width: 100%; margin: 0 auto; line-height: 0;
 }
 
-/* Если фото ОДНО — по центру */
 .mosaic-grid:has(.photo-card:only-child) {
-    column-count: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    column-count: 1; display: flex; align-items: center; justify-content: center;
     min-height: 60vh;
 }
+
 .mosaic-grid:has(.photo-card:only-child) .photo-card {
-    width: 100%;
-    max-height: 80vh;
+    width: 100%; max-height: 80vh;
 }
+
 .mosaic-grid:has(.photo-card:only-child) .photo-card img {
     max-height: 100%;
 }
 
-/* Если фото ДВА — 2 колонки */
-.mosaic-grid:has(.photo-card:nth-child(2):last-child) {
-    column-count: 1;
-}
-.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card {
-    max-height: 50vh;
-}
-.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img {
-    max-height: 50vh;
-}
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) { column-count: 1; }
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card { max-height: 50vh; }
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img { max-height: 50vh; }
 
-/* Карточки */
 .mosaic-grid .photo-card {
     break-inside: avoid !important;
-    display: inline-block !important; /* Ключевое для column-layout */
-    width: 100% !important;
-    margin: 0 0 2px 0 !important;
-    padding: 0;
-    position: relative;
-    overflow: hidden;
+    display: inline-block !important;
+    width: 100% !important; margin: 0 0 2px 0 !important;
+    padding: 0; position: relative; overflow: hidden;
 }
 
-/* Изображения */
 .mosaic-grid .photo-card img {
-    width: 100%;
-    height: auto;
-    display: block;
-    margin: 0;
-    padding: 0;
-    vertical-align: top;
-    object-fit: contain;
-    max-height: 50vh;
-    line-height: 0;
+    width: 100%; height: auto; display: block;
+    margin: 0; padding: 0; vertical-align: top;
+    object-fit: contain; max-height: 50vh; line-height: 0;
 }
 
 /* === ДЕСКТОП: 6 КОЛОНОК === */
 @media (min-width: 1024px) {
-    .mosaic-grid {
-        column-count: 6;
-        column-gap: 4px;
-        width: 100%;
-        margin: 0 auto;
-    }
+    .mosaic-grid { column-count: 6; column-gap: 4px; }
+    .mosaic-grid .photo-card { margin: 0 0 4px 0 !important; }
+    .mosaic-grid .photo-card img { max-height: 50vh; }
     
-    .mosaic-grid .photo-card {
-        margin: 0 0 4px 0 !important;
-    }
-    
-    .mosaic-grid .photo-card img {
-        max-height: 50vh;
-    }
-    
-    /* 1 фото — по центру */
     .mosaic-grid:has(.photo-card:only-child) {
-        column-count: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        column-count: 1; display: flex; align-items: center; justify-content: center;
     }
     .mosaic-grid:has(.photo-card:only-child) .photo-card {
-        max-height: 100vh;
-        max-width: 100%;
+        max-height: 100vh; max-width: 100%;
     }
     .mosaic-grid:has(.photo-card:only-child) .photo-card img {
-        max-height: 50vh;
-        max-width: 100%;
-        width: auto;
+        max-height: 50vh; max-width: 100%; width: auto;
     }
     
-                            /* 2 фото — 2 колонки */
-    
-    .mosaic-grid:has(.photo-card:nth-child(2):last-child) {
-        column-count: 2;
-    }
+    .mosaic-grid:has(.photo-card:nth-child(2):last-child) { column-count: 2; }
     .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card {
-        max-height: 100vh;
-        max-width:50vw;
+        max-height: 100vh; max-width: 50vw;
     }
     .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img {
-        max-height: 100%;
-        max-width:50vw;
+        max-height: 100%; max-width: 50vw;
     }
     
-    /* 3+ фото — 6 колонок */
     .mosaic-grid:not(:has(.photo-card:only-child)):not(:has(.photo-card:nth-child(2):last-child)) {
         column-count: 6;
     }
 }
 
-#gallery.date-mode > .photo-card { 
-    display: none; 
-}
+#gallery.date-mode > .photo-card { display: none; }
 
-
-
-
-
-
-
-
+/* Принудительная светлая тема */
 body[data-theme="light"] {
-  background: var(--bg-light) !important;
-  color: var(--text-light) !important;
+    background: var(--bg-light) !important; color: var(--text-light) !important;
 }
 body[data-theme="light"] .hero-content { background: var(--bg-light) !important; filter: invert(0) !important; }
 body[data-theme="light"] .hero-logo { mix-blend-mode: multiply !important; }
@@ -683,5 +377,3 @@ body[data-theme="light"] .loading { color: #333 !important; }
 body[data-theme="light"] .lightbox.active { background: var(--bgoverlay-light) !important; }
 body[data-theme="light"] #statusText { color: #000 !important; }
 body[data-theme="light"] .hero-progress { background: rgba(0,0,0,0.1) !important; }
-body[data-theme="light"] .hero-progress-bar { background: linear-gradient(90deg, #000, #666) !important; box-shadow: 0 0 10px rgba(0,0,0,0.3) !important; }
-body[data-theme="light"] .hero-arrow img, body[data-theme="light"] .status-loader { filter: invert(0) !important; }
