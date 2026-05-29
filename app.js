@@ -104,7 +104,6 @@ async function uploadFiles(files) {
             const newPhoto = { title, key, date: photoDate, tagYear: year };
             if (Array.isArray(window.galleryPhotos)) window.galleryPhotos.push(newPhoto);
             
-            // === ИСПРАВЛЕНО: всегда перерендериваем с сортировкой ===
             renderSortedGallery(window.galleryPhotos);
             
         } catch (err) {
@@ -342,7 +341,7 @@ function rgbToHSL(r, g, b) {
     return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
 }
 
-// === СОРТИРОВКА + РЕНДЕРИНГ ===
+// === СОРТИРОВКА + РЕНДЕРИНГ + MASONRY ===
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '';
@@ -368,21 +367,16 @@ async function renderSortedGallery(photosSource) {
         else unknown.push(p);
     });
     
-    // Сортировка по HSL внутри года
-Object.keys(groups).forEach(year => {
-    groups[year].sort((a, b) => {
-        // 1. Яркость (Lightness): от 100% к 0% (светлые в начало)
-        const lightDiff = b.analysis.lightness - a.analysis.lightness;
-        if (Math.abs(lightDiff) > 5) return lightDiff;
-
-        // 2. Насыщенность (Saturation): от ярких к блёклым
-        const satDiff = b.analysis.saturation - a.analysis.saturation;
-        if (Math.abs(satDiff) > 5) return satDiff;
-
-        // 3. Оттенок (Hue): для мягкой группировки похожих цветов
-        return a.analysis.hue - b.analysis.hue;
+    // Сортировка: Светлые/Яркие → Тёмные
+    Object.keys(groups).forEach(year => {
+        groups[year].sort((a, b) => {
+            const lightDiff = b.analysis.lightness - a.analysis.lightness;
+            if (Math.abs(lightDiff) > 5) return lightDiff;
+            const satDiff = b.analysis.saturation - a.analysis.saturation;
+            if (Math.abs(satDiff) > 5) return satDiff;
+            return a.analysis.hue - b.analysis.hue;
+        });
     });
-});
     
     // Рендеринг
     gallery.classList.add('date-mode');
@@ -405,8 +399,33 @@ Object.keys(groups).forEach(year => {
         unknown.forEach(photo => renderCard(photo, -1, true, grid));
         section.appendChild(grid); gallery.appendChild(section);
     }
+    
     console.log('✅ Сортировка завершена');
+    
+    // === ИНИЦИАЛИЗАЦИЯ MASONRY (ПЛОТНАЯ УПАКОВКА) ===
+    const grids = document.querySelectorAll('.mosaic-grid');
+    grids.forEach(grid => {
+        // Уничтожаем старый инстанс, если есть
+        if (grid.masonry) grid.masonry.destroy();
+        
+        // Создаём новый
+        grid.masonry = new Masonry(grid, {
+            itemSelector: '.photo-card',
+            columnWidth: '.photo-card',
+            percentPosition: true,
+            horizontalOrder: true, // ← СОХРАНЯЕТ ПОРЯДОК СОРТИРОВКИ (слева-направо)
+            transitionDuration: 0,
+            stagger: 0
+        });
+    });
 }
+
+// === ПЕРЕСЧЁТ MASONRY ПРИ ИЗМЕНЕНИИ РАЗМЕРА ОКНА ===
+window.addEventListener('resize', () => {
+    document.querySelectorAll('.mosaic-grid').forEach(grid => {
+        if (grid.masonry) grid.masonry.layout();
+    });
+});
 
 // === DRAG & DROP ===
 window.addEventListener('load', () => {
@@ -442,10 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function dismissHero() { if (!heroSection || heroDismissed) return; heroDismissed = true; heroSection.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'; heroSection.style.transform = 'translateY(-100%)'; setTimeout(() => { heroSection.classList.add('hidden'); heroSection.style.display = 'none'; document.body.style.overflow = ''; }, 400); }
 function markEverythingReady() {
     isEverythingReady = true;
-    
-    // === ИСПРАВЛЕНО: явно переключаем статус на 'ready' ===
     setHeroStatus('ready');
-    
     if (heroSection) heroSection.classList.add('ready');
 }
 

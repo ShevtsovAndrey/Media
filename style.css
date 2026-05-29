@@ -274,8 +274,9 @@ body {
     }
 }
 
-/* === МОЗАИКА — MASONRY (COLUMN-COUNT) === */
-/* === МОЗАИКА — СЕТКА С СОХРАНЕНИЕМ ПОРЯДКА === */
+/* ========================================== */
+/* === МОЗАИКА — MASONRY (АДАПТИВНАЯ 3-6) === */
+/* ========================================== */
 #gallery.date-mode {
     height: 100vh; overflow-y: scroll; overflow-x: hidden;
     scroll-snap-type: y mandatory; scroll-behavior: smooth;
@@ -296,48 +297,37 @@ body {
     margin-bottom: 2vh !important; height: 18vh;
 }
 
-/* === МОБИЛЬНЫЕ: 3 КОЛОНКИ === */
+/* Контейнер для Masonry */
 .mosaic-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
+    position: relative;
     width: 100%;
-    grid-auto-flow: row; /* ← Сохраняет порядок слева-направо */
+    margin: 0 auto;
 }
 
-/* Мобильные: <3 фото → 1 колонка */
-.mosaic-grid:has(.photo-card:nth-child(2):last-child),
-.mosaic-grid:has(.photo-card:only-child) {
-    grid-template-columns: 1fr;
-}
-
-/* === ДЕСКТОП: 5 КОЛОНОК === */
-@media (min-width: 1024px) {
-    .mosaic-grid {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 4px;
-    }
-    
-    /* Десктоп: динамические колонки при малом кол-ве фото */
-    .mosaic-grid:has(.photo-card:nth-child(4):last-child) { grid-template-columns: repeat(4, 1fr); }
-    .mosaic-grid:has(.photo-card:nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
-    .mosaic-grid:has(.photo-card:nth-child(2):last-child) { grid-template-columns: repeat(2, 1fr); }
-    .mosaic-grid:has(.photo-card:only-child) { grid-template-columns: 1fr; }
-}
-
-/* Карточки и изображения (100% размер, без обрезки) */
+/* Карточки: по умолчанию 3 колонки */
 .mosaic-grid .photo-card {
-    width: 100%; position: relative; overflow: hidden;
+    width: 33.333%; /* Строго 3 колонки */
+    float: left; /* Обязательно для Masonry */
+    padding: 4px; /* Зазор между фото */
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
 }
 
+/* Изображения: 100% размер, пропорции сохранены, без обрезки */
 .mosaic-grid .photo-card img {
-    width: 100%; height: auto; display: block;
-    object-fit: contain; /* ← Гарантирует 100% отображение */
-    max-height: 50vh;    /* Ограничение высоты вьюпорта */
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain; /* ГАРАНТИЯ: фото не режется */
+    max-height: 60vh; /* Ограничение высоты вьюпорта */
     line-height: 0;
 }
 
-#gallery.date-mode > .photo-card { display: none; }
+/* Адаптивные колонки (от 3 до 6) */
+@media (min-width: 600px) { .mosaic-grid .photo-card { width: 25%; } }    /* 4 колонки */
+@media (min-width: 900px) { .mosaic-grid .photo-card { width: 20%; } }   /* 5 колонок */
+@media (min-width: 1200px) { .mosaic-grid .photo-card { width: 16.666%; } } /* 6 колонок */
 
 #gallery.date-mode > .photo-card { display: none; }
 
