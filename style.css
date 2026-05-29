@@ -21,23 +21,18 @@
 
 
 /*                                              === ЗАГЛАВНЫЙ БЛОК === */
-/* === ЗАГЛАВНЫЙ БЛОК (ПРЕЛОАДЕР) === */
+/* === ЗАГЛАВНЫЙ БЛОК === */
 #hero-section {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
+    top: 0; left: 0;
+    width: 100%; height: 100vh;
     background: var(--bg);
     z-index: 99999;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-#hero-section.hidden {
-    transform: translateY(-100%);
+    will-change: transform;
+    user-select: none;
 }
 
 .hero-content {
@@ -51,89 +46,82 @@
     filter: invert(1);
 }
 
-.hero-logo {
-    max-width: 80%;
-    max-height: 80vh;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    opacity: 0.8;
-    animation: fadeIn 0.5s ease;
-}
+#hero-section.dragging { cursor: grabbing; }
+#hero-section.hidden { transform: translateY(-100%); }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-/* Прогресс бар */
-.hero-loader,
-.hero-arrow {
+/* Простой статус: текст + лоадер в линию */
+.hero-status {
     position: absolute;
-    bottom: 3vh;
+    bottom: 2vh;
     left: 50%;
     transform: translateX(-50%);
-    width: 40px;
-    height: 40px;
     display: flex;
     align-items: center;
-    justify-content: center;
 }
 
-.hero-loader img,
+#statusText {
+    color: var(--bg);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.status-loader {
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    filter: invert(0);
+}
+
+/* Стрелка */
+.hero-arrow {
+    position: absolute;
+    bottom: 2vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
 .hero-arrow img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    filter: invert(1); /* Белая иконка на тёмном фоне */
-}
-
-/* Анимация вращения лоадера */
-.hero-loader img {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    100% { transform: rotate(360deg); }
-}
-
-/* Стрелка скрыта по умолчанию */
-.hero-arrow {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-}
-
-/* Показываем стрелку когда готово */
-#hero-section.ready .hero-arrow {
-    opacity: 1;
-    pointer-events: auto;
+    filter: invert(1);
     animation: bounce 1.5s ease-in-out infinite;
 }
 
-#hero-section.ready .hero-loader {
-    display: none;
+/* Когда готово */
+#hero-section.ready .hero-status { 
+    display: none; 
+}
+#hero-section.ready .hero-arrow { 
+    opacity: 1; 
+    pointer-events: auto; 
 }
 
-@keyframes bounce {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(-10px); }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes bounce { 
+    0%, 100% { transform: translateX(-50%) translateY(0); } 
+    50% { transform: translateX(-50%) translateY(-8px); } 
 }
 
-/* Адаптивность */
+/* Блокируем drag фото */
+.gallery, .photo-card, .photo-card img {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+}
+
 @media (max-width: 768px) {
-    .hero-loader,
-    .hero-arrow {
-        width: 30px;
-        height: 30px;
-    }
+    .hero-arrow { width: 30px; height: 30px; }
+    #statusText { font-size: 12px; }
 }
 
-/* Адаптивность */
-@media (max-width: 768px) {
-    .hero-content { padding: 15vh 8vw; }
-    .hero-logo { max-width: 90%; max-height: 70vh; }
-}
+
+
 
 
 
@@ -144,6 +132,9 @@ body {
     background: var(--bg); 
     font-family: system-ui, -apple-system, sans-serif; 
     overflow-x: hidden; 
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
 
@@ -161,12 +152,21 @@ body {
     max-width: 100%; 
 }
 
-.photo-card {
-    position: relative; 
-    flex: 0 1 auto; 
-    max-width: 50%; 
-    min-width: 20vw;
-    overflow: hidden; 
+.photo-card .delete-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    opacity: 0;
+    background: var(--bgoverlay);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    z-index: 15;
 }
 
 .photo-card img {
@@ -180,25 +180,15 @@ body {
     user-select: none;
 }
 
-.photo-card:hover .delete-overlay { 
-    opacity: 1; 
-    pointer-events: auto;
-    cursor:default;
-}
-
-
-/* Размытие для фото без дат */
-
-.photo-card.no-date {
-    opacity: 0.5;
-}
-.photo-card.no-date:hover {
+.photo-card:hover .delete-overlay,
+.photo-card:active .delete-overlay {
     opacity: 1;
+    pointer-events: auto;
 }
 
 /*КНОПКИ ВНИЗУ*/
 
-.add-btn, .sort-btn {
+.add-btn {
     position: fixed; 
     bottom: 2vh; 
     right: 2vw; 
@@ -218,10 +208,6 @@ body {
     justify-content: center;
     transition: all 0.2s ease;
     z-index: 100; 
-}
-/*ДОПОЛНЕНИЕ ДЛЯ ВЫРАВНИВАНИЯ*/
-.sort-btn {
-left: 2vw;
 }
 
 .add-btn:hover, .sort-btn:hover {
@@ -337,18 +323,6 @@ left: 2vw;
     }
 }
 
-/*иконки*/
-
-.sort-btn img,
-.delete-btn img,
-.edit-meta-btn img {
-    width: 50%;
-    height: 50%;
-    object-fit: contain;
-    pointer-events: none; /* Клик проходит сквозь картинку на кнопку */
-filter: invert(1);
-}
-
 /* Картинка лоадера внутри кнопки */
 .add-btn .loading-icon {
     width: 50%;
@@ -379,26 +353,51 @@ filter: invert(1);
 }
 
 .delete-btn, .edit-meta-btn {
-    width: 24px;
-    height: 24px;
-    background: rgb(255 255 255 / 20%);
-    border: none !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
-    transition: transform 0.2s !important;
+    width: 48px;
+    height: 48px;
+    border: none;
     border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
-.edit-meta-btn:hover {
-    transform: scale(1.02) !important;
-    background: rgb(255 255 255 / 20%) !important;
+
+.delete-btn:hover, .edit-meta-btn:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.3);
 }
+
+.delete-btn:active, .edit-meta-btn:active {
+    transform: scale(0.95);
+}
+
+.delete-btn img,
 .edit-meta-btn img {
     width: 50%;
     height: 50%;
+    object-fit: contain;
+    pointer-events: none; /* Клик проходит сквозь картинку на кнопку */
+filter: invert(1);
 }
+
+
+
+
+
+
+
+
+
+
 
             /*ВЫ ВХОДИТЕ В СВЕТЛУЮ ТЕМУ! АККУРАТНЕЕ С НАСТРОЙКАМИ!*/
 
@@ -646,3 +645,28 @@ filter: invert(1);
 #gallery.date-mode > .photo-card { 
     display: none; 
 }
+
+
+
+
+
+
+
+
+body[data-theme="light"] {
+  background: var(--bg-light) !important;
+  color: var(--text-light) !important;
+}
+body[data-theme="light"] .hero-content { background: var(--bg-light) !important; filter: invert(0) !important; }
+body[data-theme="light"] .hero-logo { mix-blend-mode: multiply !important; }
+body[data-theme="light"] .year-header { color: var(--text-light) !important; text-shadow: none !important; }
+body[data-theme="light"] .add-btn, body[data-theme="light"] .sort-btn { background: var(--bgoverlay-light) !important; color: var(--text-light) !important; }
+body[data-theme="light"] .sort-btn img, body[data-theme="light"] .delete-btn img, body[data-theme="light"] .edit-meta-btn img, body[data-theme="light"] .add-btn .loading-icon { filter: invert(0) !important; }
+body[data-theme="light"] .delete-btn, body[data-theme="light"] .edit-meta-btn { background: var(--bgoverlay-light) !important; }
+body[data-theme="light"] .drag-overlay { background: rgba(255,255,255,0.75) !important; color: #000 !important; text-shadow: none !important; }
+body[data-theme="light"] .loading { color: #333 !important; }
+body[data-theme="light"] .lightbox.active { background: var(--bgoverlay-light) !important; }
+body[data-theme="light"] #statusText { color: #000 !important; }
+body[data-theme="light"] .hero-progress { background: rgba(0,0,0,0.1) !important; }
+body[data-theme="light"] .hero-progress-bar { background: linear-gradient(90deg, #000, #666) !important; box-shadow: 0 0 10px rgba(0,0,0,0.3) !important; }
+body[data-theme="light"] .hero-arrow img, body[data-theme="light"] .status-loader { filter: invert(0) !important; }

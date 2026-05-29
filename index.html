@@ -6,18 +6,21 @@
     <title>Shevtsov Media</title>
     <link rel="stylesheet" href="style.css">
 </head>
-    <!-- Заглавный блок (прелоадер) - ВНЕ BODY -->
-    <div id="hero-section">
+   <!-- Заглавный блок -->
+<div id="hero-section">
     <div class="hero-content">
         <img src="icons/logo.png" alt="Logo" class="hero-logo">
     </div>
-    <!-- Лоадер -->
-    <div class="hero-loader" id="heroLoader">
-        <img src="icons/loader.png" alt="Loading..." class="loader-icon">
+    
+    <!-- Простой статус с лоадером -->
+    <div class="hero-status" id="heroStatus">
+        <span id="statusText">Загрузка</span>
+        <img src="icons/loader.png" alt="" class="status-loader">
     </div>
+    
     <!-- Стрелка (показывается когда готово) -->
     <div class="hero-arrow" id="heroArrow">
-        <img src="icons/arrowdown.png" alt="Scroll" class="arrow-icon">
+        <img src="icons/arrowdown.png" alt="Scroll">
     </div>
 </div>
     
@@ -29,7 +32,8 @@
     <main id="gallery" class="gallery"></main>
     
     <button id="addBtn" class="add-btn" style="display: none;">+</button>
-    <button id="sortBtn" class="sort-btn" title="Сменить сортировку">⟳</button>
+    <!-- БЛЮР ДЛЯ ДРАГАНДРОП -->
+    <!-- <button id="sortBtn" class="sort-btn" title="Сменить сортировку">⟳</button> -->
     <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
 
     <!-- AWS SDK v2 -->

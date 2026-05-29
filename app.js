@@ -12,6 +12,40 @@ const GITHUB_CONFIG = {
     jsonPath: 'data/gallery.json'
 };
 
+
+// === УПРАВЛЕНИЕ СТАТУСОМ ЗАГРУЗКИ ===
+function setHeroStatus(status) {
+    const statusEl = document.getElementById('heroStatus');
+    const textEl = document.getElementById('statusText');
+    const loader = document.getElementById('heroLoader');
+    const arrow = document.getElementById('heroArrow');
+    
+    if (!statusEl || !textEl) return;
+    
+    switch(status) {
+        case 'loading':
+            textEl.textContent = 'Загрузка';
+            statusEl.style.display = 'flex';
+            if (loader) loader.style.display = 'flex';
+            if (arrow) arrow.classList.remove('show');
+            break;
+        case 'sorting':
+            textEl.textContent = 'Анализ и сортировка';
+            statusEl.style.display = 'flex';
+            if (loader) loader.style.display = 'flex';
+            if (arrow) arrow.classList.remove('show');
+            break;
+        case 'ready':
+            statusEl.style.display = 'none';
+            if (loader) loader.style.display = 'none';
+            if (arrow) arrow.classList.add('show');
+            console.log('✅ Всё готово! Тяни вверх чтобы войти');
+            break;
+    }
+}
+
+
+
 // Инициализация AWS SDK v2
 AWS.config.update({
     accessKeyId: YANDEX_CONFIG.accessKeyId,
@@ -147,11 +181,10 @@ async function uploadFiles(files) {
 }
 
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
-// === ЗАГРУЗКА ГАЛЕРЕИ (ТОЛЬКО ЯНДЕКС) ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
-    gallery.innerHTML = '<div class="loading">Загрузка</div>';
-
+    setHeroStatus('loading');
+    gallery.innerHTML = '';
     try {
         const token = localStorage.getItem('github_token');
         let githubPhotos = [];
@@ -247,29 +280,26 @@ async function loadGallery() {
                 };
             });
 
-        console.log(`✅ Галерея: ${galleryPhotos.length} фото`);
-
-        // 5. Сохраняем глобально и рендерим
+      console.log(`✅ Галерея: ${galleryPhotos.length} фото`);
         window.galleryPhotos = galleryPhotos;
-        gallery.innerHTML = '';
         
-        if (sortMode !== 'default') {
-            renderSortedGallery(galleryPhotos);
-        } else {
-            galleryPhotos.forEach(photo => renderCard(photo, -1));
-        }
-
+        // 2. Перед сортировкой меняем статус
+        setHeroStatus('sorting');
+        
+        // 3. Запускаем сортировку
+        await renderSortedGallery(galleryPhotos);
+        
         if (galleryPhotos.length === 0) {
-            gallery.innerHTML = '<div class="loading">Нет фото. Загрузи файлы в Яндекс.</div>';
+            gallery.innerHTML = '';
         }
 
-        // === ✅ ГАЛЕРЕЯ ЗАГРУЖЕНА ===
-        galleryLoaded = true;
-        if (typeof checkReady === 'function') checkReady();
+        // 4. ВСЁ ГОТОВО — разрешаем свайп и показываем стрелку
+        markEverythingReady();
 
     } catch (err) {
         console.error('❌ Ошибка загрузки:', err);
-        gallery.innerHTML = '<div class="loading">Ошибка загрузки. Проверь интернет.</div>';
+        // В случае ошибки тоже показываем стрелку (чтобы пользователь не завис)
+        markEverythingReady();
     }
 }
 
@@ -311,7 +341,7 @@ function renderCard(photo, index, isNoDate = false, target = null) {
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.title = 'Удалить';
-        delBtn.innerHTML = '<img src="delete.png" alt="Удалить">';
+        delBtn.innerHTML = '<img src="icons/delete.png" alt="Удалить">';
         delBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             deletePhoto(photo.key, photo.title, card);
@@ -320,7 +350,7 @@ function renderCard(photo, index, isNoDate = false, target = null) {
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-meta-btn';
         editBtn.title = 'Редактировать год';
-        editBtn.innerHTML = '<img src="edit.png">';
+        editBtn.innerHTML = '<img src="icons/edit.png">';
         editBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             let currentVal = 'нет данных';
@@ -507,11 +537,7 @@ function openLightbox(imgUrl) {
 
 window.openLightbox = openLightbox;
 
-
-
-
-// СОРТИРОВКА ГАЛЕРЕИ ПО КНОПКЕ (ТЕСТ)
-
+/*
 // === СОРТИРОВКА ГАЛЕРЕИ ===
 let sortMode = localStorage.getItem('gallerySortMode') || 'default';
 const sortBtn = document.getElementById('sortBtn');
@@ -592,7 +618,17 @@ async function getPhotoHue(key, imgUrl) {
         img.src = imgUrl;
     });
 }
+*/
 
+
+
+
+
+
+
+
+
+/*
 //СОРТИРОВКА
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
@@ -750,6 +786,321 @@ function getPhotoHueSimple(imgUrl) {
         img.src = imgUrl;
     });
 }
+*/
+
+
+
+// === СОРТИРОВКА: ЦВЕТ + СЛОЖНОСТЬ ===
+        async function renderSortedGallery(photosSource) {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            await new Promise(r => setTimeout(r, 30));
+
+            let photos = Array.isArray(photosSource) ? [...photosSource] : [];
+            
+            // Фильтр
+            photos = photos.filter(p => {
+                if (!p.key || p.key === 'undefined' || p.key.trim() === '' || p.key === 'null') {
+                    return false;
+                }
+                return true;
+            });
+            
+            if (photos.length === 0) {
+                gallery.innerHTML = '<div class="loading">Нет фото</div>';
+                return;
+            }
+
+            // === АНАЛИЗ ВСЕХ ФОТО ===
+            console.log('🎨 Анализирую', photos.length, 'фото...');
+            const photosWithAnalysis = await Promise.all(photos.map(async (p, index) => {
+                const analysis = await analyzePhoto(`${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`);
+                return { ...p, analysis };
+            }));
+
+            // === ГРУППИРОВКА ПО ГОДАМ ===
+            const groups = {};
+            const unknown = [];
+
+            photosWithAnalysis.forEach(p => {
+                const y = p.tagYear;
+                
+                let isValid = false;
+                if (typeof y === 'number' && !isNaN(y) && y >= 1999 && y <= 2100) {
+                    isValid = true;
+                }
+                else if (typeof y === 'string') {
+                    const num = parseInt(y.trim(), 10);
+                    if (!isNaN(num) && num >= 1999 && num <= 2100) {
+                        isValid = true;
+                        p.tagYear = num;
+                    }
+                }
+                
+                if (isValid) {
+                    const year = String(p.tagYear);
+                    if (!groups[year]) groups[year] = [];
+                    groups[year].push(p);
+                } else {
+                    unknown.push(p);
+                }
+            });
+
+            // === СОРТИРОВКА ВНУТРИ ГОДА ===
+            Object.keys(groups).forEach(year => {
+                groups[year].sort((a, b) => {
+                    // 1. Сначала по цвету (холодные → тёплые)
+                    // Сдвиг: синий (240°) → 0, красный (0°) → 120
+                    const aHue = (a.analysis.hue + 120) % 360;
+                    const bHue = (b.analysis.hue + 120) % 360;
+                    
+                    const hueDiff = aHue - bHue;
+                    
+                    // 2. Если цвета похожи (в пределах 60°), сортируем по "простоте"
+                    if (Math.abs(hueDiff) < 60) {
+                        // Простые и светлые → сложные и тёмные
+                        const scoreDiff = b.analysis.simplicityScore - a.analysis.simplicityScore;
+                        
+                        // Если разница в score > 0.1, используем её
+                        if (Math.abs(scoreDiff) > 0.1) {
+                            return scoreDiff;
+                        }
+                    }
+                    
+                    // Иначе по цвету
+                    return hueDiff;
+                });
+            });
+
+            // === РЕНДЕРИНГ ===
+            gallery.innerHTML = '';
+            gallery.classList.add('date-mode');
+            
+            const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
+
+            sortedYears.forEach(year => {
+                const section = document.createElement('div');
+                section.className = 'year-section';
+                
+                const header = document.createElement('div');
+                header.className = 'year-header';
+                header.textContent = year;
+                section.appendChild(header);
+                
+                const grid = document.createElement('div');
+                grid.className = 'mosaic-grid';
+                
+                groups[year].forEach(photo => renderCard(photo, -1, false, grid));
+                
+                section.appendChild(grid);
+                gallery.appendChild(section);
+            });
+
+            if (unknown.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'year-section';
+                
+                const header = document.createElement('div');
+                header.className = 'year-header';
+                header.textContent = '-';
+                section.appendChild(header);
+                
+                const grid = document.createElement('div');
+                grid.className = 'mosaic-grid';
+                unknown.forEach(photo => renderCard(photo, -1, true, grid));
+                
+                section.appendChild(grid);
+                gallery.appendChild(section);
+            }
+            
+            console.log('✅ Сортировка завершена');
+        }
+
+// === КОМПЛЕКСНЫЙ АНАЛИЗ ФОТО ===
+function analyzePhoto(imgUrl) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Уменьшаем до 100×100 для анализа
+            canvas.width = 100;
+            canvas.height = 100;
+            ctx.drawImage(img, 0, 0, 100, 100);
+            
+            const imageData = ctx.getImageData(0, 0, 100, 100);
+            const data = imageData.data;
+            
+            // === 1. Считаем статистику ===
+            let totalR = 0, totalG = 0, totalB = 0;
+            let totalL = 0; // Яркость
+            let totalS = 0; // Насыщенность
+            let brightnessSum = 0;
+            let darkPixels = 0;
+            let lightPixels = 0;
+            let colorBins = new Array(12).fill(0); // 12 цветовых бинов (по 30°)
+            
+            // Для вычисления контраста/деталей
+            let pixels = [];
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                
+                // Яркость пикселя
+                const brightness = (r + g + b) / 3;
+                brightnessSum += brightness;
+                
+                // Считаем тёмные и светлые пиксели
+                if (brightness < 50) darkPixels++;
+                if (brightness > 200) lightPixels++;
+                
+                // RGB → HSL
+                const hsl = rgbToHSL(r, g, b);
+                totalL += hsl.l;
+                totalS += hsl.s;
+                
+                // Цветовой бин (0-11)
+                const bin = Math.floor(hsl.h / 30);
+                colorBins[bin]++;
+                
+                // Для контраста
+                pixels.push(brightness);
+            }
+            
+            const pixelCount = data.length / 4;
+            
+            // === 2. Вычисляем метрики ===
+            
+            // Средняя яркость (0-100)
+            const avgLightness = totalL / pixelCount;
+            
+            // Средняя насыщенность (0-100)
+            const avgSaturation = totalS / pixelCount;
+            
+            // Процент тёмных пикселей
+            const darkRatio = darkPixels / pixelCount;
+            
+            // Процент светлых пикселей
+            const lightRatio = lightPixels / pixelCount;
+            
+            // Доминирующий цвет (бин с максимумом)
+            const dominantBin = colorBins.indexOf(Math.max(...colorBins));
+            const dominantHue = dominantBin * 30 + 15; // Центр бина
+            
+            // === 3. Количество цветов (разнообразие) ===
+            // Считаем сколько бинов заполнено > 5%
+            const filledBins = colorBins.filter(count => count > pixelCount * 0.05).length;
+            const colorDiversity = filledBins / 12; // 0-1
+            
+            // === 4. Контраст/детализация (стандартное отклонение) ===
+            const meanBrightness = brightnessSum / pixelCount;
+            let variance = 0;
+            for (const p of pixels) {
+                variance += Math.pow(p - meanBrightness, 2);
+            }
+            const stdDev = Math.sqrt(variance / pixelCount);
+            const complexity = stdDev / 128; // Нормализуем (max stdDev = 128)
+            
+            // === 5. Комплексный score ===
+            // Чем выше score, тем "проще" и "светлее" фото
+            const simplicityScore = (
+                (1 - colorDiversity) * 0.3 +      // Меньше цветов = лучше
+                (1 - avgSaturation / 100) * 0.25 + // Меньше насыщенности = лучше
+                (1 - complexity) * 0.2 +           // Меньше деталей = лучше
+                (lightRatio) * 0.15 +              // Больше светлого = лучше
+                (1 - darkRatio) * 0.1              // Меньше тёмного = лучше
+            );
+            
+            const result = {
+                hue: dominantHue,                    // 0-360
+                lightness: avgLightness,             // 0-100
+                saturation: avgSaturation,           // 0-100
+                colorDiversity: colorDiversity,      // 0-1
+                complexity: complexity,              // 0-1
+                darkRatio: darkRatio,                // 0-1
+                lightRatio: lightRatio,              // 0-1
+                simplicityScore: simplicityScore,    // 0-1 (чем выше, тем "проще")
+                
+                // Для отладки
+                debug: {
+                    filledBins,
+                    stdDev: Math.round(stdDev)
+                }
+            };
+            
+            console.log(`📊 ${imgUrl.split('/').pop().substring(0, 25)}... 
+               H:${Math.round(result.hue)}° L:${Math.round(result.lightness)} S:${Math.round(result.saturation)} 
+               Diversity:${result.colorDiversity.toFixed(2)} Complexity:${result.complexity.toFixed(2)} 
+               Score:${result.simplicityScore.toFixed(2)}`);
+            
+            resolve(result);
+        };
+        
+        img.onerror = () => {
+            console.error('❌ Ошибка анализа:', imgUrl);
+            resolve({
+                hue: 0, lightness: 50, saturation: 50,
+                colorDiversity: 0.5, complexity: 0.5,
+                darkRatio: 0.5, lightRatio: 0.5,
+                simplicityScore: 0.5,
+                debug: { filledBins: 0, stdDev: 0 }
+            });
+        };
+        
+        img.src = imgUrl;
+    });
+}
+
+// === RGB → HSL ===
+function rgbToHSL(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    
+    // Lightness
+    const l = (max + min) / 2;
+    
+    // Saturation & Hue
+    let h = 0;
+    let s = 0;
+    
+    if (delta !== 0) {
+        // Saturation
+        s = l < 0.5 ? delta / (max + min) : delta / (2 - max - min);
+        
+        // Hue
+        if (max === r) {
+            h = ((g - b) / delta + (g < b ? 6 : 0)) / 6;
+        } else if (max === g) {
+            h = ((b - r) / delta + 2) / 6;
+        } else {
+            h = ((r - g) / delta + 4) / 6;
+        }
+    }
+    
+    return {
+        h: Math.round(h * 360), // 0-360
+        s: Math.round(s * 100), // 0-100%
+        l: Math.round(l * 100)  // 0-100%
+    };
+}
+
+
+
+
+
+
+
+
 
 
 // === DRAG & DROP (Ждёт загрузки страницы) ===
@@ -810,75 +1161,104 @@ window.addEventListener('load', () => {
 });
 
 
-// === ЗАГЛАВНЫЙ БЛОК С ПРОГРЕСС БАРОМ ===
-// === ЗАГЛАВНЫЙ БЛОК С ЛОАДЕРОМ ===
-let heroSection, heroLoader, heroArrow;
-let heroVisible = true;
-let isAnimating = false;
-let isReady = false;
-let galleryLoaded = false;
+// === ЗАГЛАВНЫЙ БЛОК: ПРОСТОЙ DRAG + СТАТУС ===
+let heroSection;
+let isDragging = false;
+let startY = 0, currentY = 0;
+let heroDismissed = false;
+let isEverythingReady = false;
 
-// Инициализация после DOM
 document.addEventListener('DOMContentLoaded', () => {
     heroSection = document.getElementById('hero-section');
-    heroLoader = document.getElementById('heroLoader');
-    heroArrow = document.getElementById('heroArrow');
     
     if (heroSection) {
-        document.body.classList.remove('hero-hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Mouse
+        heroSection.addEventListener('mousedown', (e) => {
+            if (heroDismissed || !isEverythingReady) return;
+            isDragging = true;
+            startY = e.clientY;
+            heroSection.classList.add('dragging');
+        });
+        
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || heroDismissed || !isEverythingReady) return;
+            currentY = e.clientY;
+            const deltaY = currentY - startY;
+            if (deltaY < 0) {
+                heroSection.style.transform = `translateY(${deltaY}px)`;
+            }
+        });
+        
+        window.addEventListener('mouseup', () => {
+            if (!isDragging || heroDismissed || !isEverythingReady) return;
+            isDragging = false;
+            heroSection.classList.remove('dragging');
+            
+            const threshold = window.innerHeight * 0.4;
+            if (currentY - startY < -threshold) {
+                dismissHero();
+            } else {
+                heroSection.style.transform = 'translateY(0)';
+            }
+            currentY = 0; startY = 0;
+        });
+        
+        // Touch
+        heroSection.addEventListener('touchstart', (e) => {
+            if (heroDismissed || !isEverythingReady) return;
+            isDragging = true;
+            startY = e.touches[0].clientY;
+            heroSection.classList.add('dragging');
+        }, { passive: true });
+        
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging || heroDismissed || !isEverythingReady) return;
+            currentY = e.touches[0].clientY;
+            const deltaY = currentY - startY;
+            if (deltaY < 0) {
+                heroSection.style.transform = `translateY(${deltaY}px)`;
+            }
+        }, { passive: true });
+        
+        window.addEventListener('touchend', () => {
+            if (!isDragging || heroDismissed || !isEverythingReady) return;
+            isDragging = false;
+            heroSection.classList.remove('dragging');
+            
+            const threshold = window.innerHeight * 0.4;
+            if (currentY - startY < -threshold) {
+                dismissHero();
+            } else {
+                heroSection.style.transform = 'translateY(0)';
+            }
+            currentY = 0; startY = 0;
+        });
     }
 });
 
-// Проверка готовности
-function checkReady() {
-    if (galleryLoaded && heroSection && !isReady) {
-        isReady = true;
-        heroSection.classList.add('ready');
-        console.log('✅ Hero ready! Scroll up to enter');
-    }
-}
-
-// Wheel event (десктоп)
-window.addEventListener('wheel', (e) => {
-    if (isAnimating || !isReady || !heroVisible) return;
-    
-    if (e.deltaY < -50) {
-        e.preventDefault();
-        dismissHero();
-    }
-}, { passive: false });
-
-// Touch events (мобильные)
-let touchStartY = 0;
-window.addEventListener('touchstart', (e) => {
-    touchStartY = e.touches[0].clientY;
-}, { passive: true });
-
-window.addEventListener('touchend', (e) => {
-    if (isAnimating || !isReady || !heroVisible) return;
-    
-    const diff = touchStartY - e.changedTouches[0].clientY;
-    if (diff < -100) {
-        dismissHero();
-    }
-}, { passive: false });
-
-// Функция скрытия героя
 function dismissHero() {
-    if (!heroSection) return;
-    
-    isAnimating = true;
-    heroVisible = false;
-    
-    heroSection.classList.add('hidden');
-    document.body.classList.add('hero-hidden');
-    
+    if (!heroSection || heroDismissed) return;
+    heroDismissed = true;
+    heroSection.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+    heroSection.style.transform = 'translateY(-100%)';
     setTimeout(() => {
+        heroSection.classList.add('hidden');
         heroSection.style.display = 'none';
-        isAnimating = false;
-    }, 600);
+        document.body.style.overflow = '';
+    }, 400);
 }
 
+function markEverythingReady() {
+    isEverythingReady = true;
+    if (heroSection) heroSection.classList.add('ready');
+}
+
+function setHeroStatus(text) {
+    const statusEl = document.getElementById('statusText');
+    if (statusEl) statusEl.textContent = text;
+}
 
 // Старт
 loadGallery();
@@ -893,4 +1273,86 @@ window.addEventListener('load', () => {
             console.log('✅ Hero section ready, scroll up to hide');
         }
     }, 1000);
+});
+
+
+// === MOUSE DRAG SCROLL FOR GALLERY (DESKTOP) ===
+const galleryEl = document.getElementById('gallery');
+let isGalleryDrag = false;
+let dragStartY = 0;
+let dragScrollStart = 0;
+let dragThresholdMet = false;
+
+galleryEl.addEventListener('mousedown', (e) => {
+    // Игнорируем клики по кнопкам, лайтбоксу и админ-оверлеям
+    if (e.target.closest('.delete-overlay, .lightbox, .add-btn, .sort-btn')) return;
+    if (!galleryEl.classList.contains('date-mode')) return;
+
+    isGalleryDrag = true;
+    dragThresholdMet = false;
+    dragStartY = e.pageY;
+    dragScrollStart = galleryEl.scrollTop;
+    galleryEl.style.cursor = 'grabbing';
+    // Временно отключаем снап, чтобы браузер не боролся с ручным скроллом
+    galleryEl.style.scrollSnapType = 'none';
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isGalleryDrag) return;
+    
+    // Порог 5px: отличаем обычный клик от перетаскивания
+    if (!dragThresholdMet && Math.abs(e.pageY - dragStartY) > 5) {
+        dragThresholdMet = true;
+    }
+    if (!dragThresholdMet) return;
+
+    e.preventDefault(); // Блокируем выделение текста и стандартный drag браузера
+    const deltaY = e.pageY - dragStartY;
+    galleryEl.scrollTop = dragScrollStart - deltaY;
+});
+
+window.addEventListener('mouseup', () => {
+    if (!isGalleryDrag) return;
+    isGalleryDrag = false;
+    dragThresholdMet = false;
+    galleryEl.style.cursor = '';
+    
+    // Возвращаем снап с небольшой задержкой, чтобы браузер успел отрисовать позицию
+    setTimeout(() => {
+        if (galleryEl.classList.contains('date-mode')) {
+            galleryEl.style.scrollSnapType = 'y mandatory';
+        }
+    }, 50);
+});
+
+// Если мышка вышла за пределы окна во время перетаскивания
+galleryEl.addEventListener('mouseleave', () => {
+    if (isGalleryDrag) {
+        isGalleryDrag = false;
+        dragThresholdMet = false;
+        galleryEl.style.cursor = '';
+        if (galleryEl.classList.contains('date-mode')) {
+            galleryEl.style.scrollSnapType = 'y mandatory';
+        }
+    }
+});
+
+
+
+// === УПРАВЛЕНИЕ ТЕМОЙ ИЗ КОНСОЛИ ===
+window.setTheme = function(mode) {
+  const body = document.body;
+  if (mode === 'light' || mode === 'dark' || mode === 'auto') {
+    body.setAttribute('data-theme', mode === 'auto' ? '' : mode);
+    localStorage.setItem('theme-force', mode);
+    console.log(`🎨 Тема: ${mode} | Команды: setTheme('light'), setTheme('dark'), setTheme('auto')`);
+  } else {
+    console.warn('️ Используй: setTheme("light"), setTheme("dark") или setTheme("auto")');
+  }
+}
+
+// Применяем сохранённую тему при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('theme-force');
+  if (saved) window.setTheme(saved);
 });
