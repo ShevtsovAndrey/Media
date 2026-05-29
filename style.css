@@ -78,17 +78,16 @@
 }
 
 #statusText {
-    color: var(--bg);
-    font-size: 14px;
+    color: white;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 2px;
 }
 
 .status-loader {
     width: 24px;
     height: 24px;
     animation: spin 1s linear infinite;
-    filter: invert(0);
+    filter: invert(1);
 }
 
 /* Стрелка */
@@ -446,6 +445,18 @@ body {
     }
     .hero-logo {
     mix-blend-mode: multiply;
+}
+#statusText {
+    color: rgb(0, 0, 0);
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.status-loader {
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    filter: invert(0);
 }
 
 
