@@ -224,7 +224,7 @@ body {
     box-shadow: none;
 }
 
-.sort-btn:active, .add-btn:active { 
+.add-btn:active { 
     transform: scale(0.95); 
 }
 
@@ -303,12 +303,11 @@ body {
     width: 100%; 
     text-align: center; 
     color: #fff; 
-    font-size: clamp(40px, 30vw, 120px); /* Адаптивный: от 40px до 120px, идеально ~30vh */
+    font-size: clamp(24px, 30vw, 120px); /* Адаптивный: от 40px до 120px, идеально ~30vh */
     font-weight: 200;  
-    margin: 6vh;
+    margin: 4vh;
     text-transform: uppercase; 
     opacity: 0.8;
-    text-shadow: 0 4px 30px rgba(0,0,0,0.5);
     pointer-events: none; /* Не мешает кликам */
     user-select: none;
     animation: fadeInYear 0.2s linear;
@@ -347,33 +346,29 @@ body {
     opacity: 0.3;
     transition: opacity 0.2s;
     pointer-events: none;
-    z-index: 9999;
-    border: 2vw;
-    
+    z-index: 9999;    
 }
 
 .delete-btn, .edit-meta-btn {
+    background: transparent;
+    border-radius: 50%;
+    mix-blend-mode: multiply;
     width: 48px;
     height: 48px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: transform 0.2s, background 0.2s;
     padding: 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
 .delete-btn:hover, .edit-meta-btn:hover {
     transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.3);
 }
 
 .delete-btn:active, .edit-meta-btn:active {
@@ -382,10 +377,7 @@ body {
 
 .delete-btn img,
 .edit-meta-btn img {
-    width: 50%;
-    height: 50%;
-    object-fit: contain;
-    pointer-events: none; /* Клик проходит сквозь картинку на кнопку */
+    pointer-events: none;
 filter: invert(1);
 }
 
@@ -408,54 +400,50 @@ filter: invert(1);
     .hero-arrow img{
         filter: invert(0);
     }
-    
-    body {
-        background: var(--bg-light);
-        color: #000000;
-    }
 
     .hero-content {
-            background: var(--bg-light);
+    background: var(--bg-light);
     filter: invert(0);
     }
     .hero-logo {
     mix-blend-mode: multiply;
 }
 
-    /* Заголовки годов */
+
+    /* ТЕЛО */
+    
+    body {
+        background: var(--bg-light);
+        color: #e0e0e0;
+    }
+    
+                        /* Заголовки годов */
     .year-header {
         color: var(--text-light);
         text-shadow: none;
     }
 
     /* Плавающие кнопки (+ и сортировка) */
-    .add-btn, .sort-btn {
+    .add-btn {
         background: var(--bgoverlay-light);
         color: var(--text-light);
     }
-    .add-btn:hover, .sort-btn:hover {
+    .add-btn:hover {
         background: var(--bgoverlay-light);
     }
-
-    /* Иконки: УБИРАЕМ инверсию, так как они теперь на светлом фоне */
-    .sort-btn img,
-    .edit-meta-btn img,
-    .delete-btn img,
     .add-btn .loading-icon {
         filter: invert(0) !important;
     }
 
-    /* Кнопки удаления и редактирования */
-    .delete-btn, .edit-meta-btn {
-        background: var(--bgoverlay-light);
-        border-radius: var(--br);
-        color: #ffffff;
+.edit-meta-btn ,
+    .delete-btn {
+        background: transparent;
+        filter: invert(1);
     }
-
-     .delete-btn:hover, .edit-meta-btn:hover {
-        background: var(--bgoverlay-light);
-        border-radius: var(--br);
-        color: #ffffff;
+    
+    .edit-meta-btn img,
+    .delete-btn img{
+        filter: invert(0);
     }
 
     /* Drag & Drop оверлей */
