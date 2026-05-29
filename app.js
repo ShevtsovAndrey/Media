@@ -1275,6 +1275,70 @@ window.addEventListener('load', () => {
     }, 1000);
 });
 
+
+// === MOUSE DRAG SCROLL FOR GALLERY (DESKTOP) ===
+const galleryEl = document.getElementById('gallery');
+let isGalleryDrag = false;
+let dragStartY = 0;
+let dragScrollStart = 0;
+let dragThresholdMet = false;
+
+galleryEl.addEventListener('mousedown', (e) => {
+    // Игнорируем клики по кнопкам, лайтбоксу и админ-оверлеям
+    if (e.target.closest('.delete-overlay, .lightbox, .add-btn, .sort-btn')) return;
+    if (!galleryEl.classList.contains('date-mode')) return;
+
+    isGalleryDrag = true;
+    dragThresholdMet = false;
+    dragStartY = e.pageY;
+    dragScrollStart = galleryEl.scrollTop;
+    galleryEl.style.cursor = 'grabbing';
+    // Временно отключаем снап, чтобы браузер не боролся с ручным скроллом
+    galleryEl.style.scrollSnapType = 'none';
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isGalleryDrag) return;
+    
+    // Порог 5px: отличаем обычный клик от перетаскивания
+    if (!dragThresholdMet && Math.abs(e.pageY - dragStartY) > 5) {
+        dragThresholdMet = true;
+    }
+    if (!dragThresholdMet) return;
+
+    e.preventDefault(); // Блокируем выделение текста и стандартный drag браузера
+    const deltaY = e.pageY - dragStartY;
+    galleryEl.scrollTop = dragScrollStart - deltaY;
+});
+
+window.addEventListener('mouseup', () => {
+    if (!isGalleryDrag) return;
+    isGalleryDrag = false;
+    dragThresholdMet = false;
+    galleryEl.style.cursor = '';
+    
+    // Возвращаем снап с небольшой задержкой, чтобы браузер успел отрисовать позицию
+    setTimeout(() => {
+        if (galleryEl.classList.contains('date-mode')) {
+            galleryEl.style.scrollSnapType = 'y mandatory';
+        }
+    }, 50);
+});
+
+// Если мышка вышла за пределы окна во время перетаскивания
+galleryEl.addEventListener('mouseleave', () => {
+    if (isGalleryDrag) {
+        isGalleryDrag = false;
+        dragThresholdMet = false;
+        galleryEl.style.cursor = '';
+        if (galleryEl.classList.contains('date-mode')) {
+            galleryEl.style.scrollSnapType = 'y mandatory';
+        }
+    }
+});
+
+
+
 // === УПРАВЛЕНИЕ ТЕМОЙ ИЗ КОНСОЛИ ===
 window.setTheme = function(mode) {
   const body = document.body;
