@@ -181,35 +181,33 @@ async function uploadFiles(files) {
 }
 
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
+// === ЗАГРУЗКА ГАЛЕРЕИ (ЯНДЕКС + METADATA ИЗ ПУБЛИЧНОГО JSON) ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
-    setHeroStatus('loading');
+    setHeroStatus('Загрузка');
     gallery.innerHTML = '';
+
     try {
-        const token = localStorage.getItem('github_token');
         let githubPhotos = [];
-        let sha = null;
         
-        // 1. Пытаемся получить JSON с GitHub (для метаданных)
-        if (token) {
-            try {
-                const jsonUrl = `https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`;
-                const jsonRes = await fetch(jsonUrl, {
-                    headers: { 'Authorization': `token ${token}` }
-                });
-                
-                if (jsonRes.ok) {
-                    const data = await jsonRes.json();
-                    githubPhotos = JSON.parse(atob(data.content));
-                    sha = data.sha;
-                    console.log(`✅ JSON загружен: ${githubPhotos.length} записей`);
-                }
-            } catch (err) {
-                console.warn('⚠️ Не удалось загрузить JSON, продолжаем без метаданных');
+        // 1. Загружаем gallery.json ИЗ ПУБЛИЧНОГО REPO (без токена)
+        // Публичные репозитории можно читать без авторизации (лимит 60/час)
+        try {
+            const jsonUrl = `https://api.github.com/repos/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.jsonPath}?ref=${GITHUB_CONFIG.branch}`;
+            const jsonRes = await fetch(jsonUrl); // ← БЕЗ HEADERS, работает для всех
+            
+            if (jsonRes.ok) {
+                const data = await jsonRes.json();
+                githubPhotos = JSON.parse(atob(data.content));
+                console.log(`✅ Метаданные загружены: ${githubPhotos.length} записей`);
+            } else {
+                console.warn(`⚠️ Не удалось загрузить JSON (статус ${jsonRes.status}), продолжаем без метаданных`);
             }
+        } catch (err) {
+            console.warn('⚠️ Ошибка загрузки JSON, продолжаем без метаданных');
         }
 
-        // 2. Получаем СПИСОК файлов из Яндекса (это наш источник истины!)
+        // 2. Получаем список файлов из Яндекса (источник истины)
         const s3Files = await new Promise((resolve, reject) => {
             s3.listObjectsV2({ Bucket: YANDEX_CONFIG.bucket }, (err, data) => {
                 if (err) reject(err);
@@ -219,7 +217,7 @@ async function loadGallery() {
 
         console.log(`📦 Найдено файлов на Яндексе: ${s3Files.length}`);
 
-        // 3. Создаём мапу GitHub фото для быстрого поиска по ключу
+        // 3. Мапа метаданных для быстрого поиска
         const githubMap = new Map();
         githubPhotos.forEach(p => {
             if (p.key) githubMap.set(p.key, p);
@@ -228,49 +226,28 @@ async function loadGallery() {
         // 4. Формируем галерею ТОЛЬКО из файлов Яндекса
         const galleryPhotos = s3Files
             .filter(f => {
-                // Фильтруем НЕ фото и системные файлы
                 const key = f.Key;
-                if (!key || key === 'undefined' || key.includes('undefined')) {
-                    return false;
-                }
-                if (key.includes('logo') || key.includes('.txt') || key.includes('.json')) {
-                    return false;
-                }
-                // Только изображения
-                if (!f.Key.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) {
-                    return false;
-                }
-                return true;
+                if (!key || key === 'undefined' || key.includes('undefined')) return false;
+                if (key.includes('logo') || key.includes('.txt') || key.includes('.json')) return false;
+                return /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(key);
             })
             .map(f => {
                 const key = f.Key;
                 const title = key.split('/').pop().replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
-                
-                // Пытаемся найти метаданные из GitHub
                 const githubData = githubMap.get(key) || {};
                 
-                // Если есть tagYear в GitHub — используем его
-                let tagYear = githubData.tagYear || null;
+                // === БЕРЁМ tagYear ТОЛЬКО ИЗ МЕТАДАННЫХ ===
+                // Если в JSON нет тега или он невалиден → null → фото в "-"
+                let tagYear = null;
+                const yt = githubData.tagYear;
                 
-                // Если нет tagYear, пытаемся извлечь из имени файла
-                if (!tagYear) {
-                    const match = key.match(/(\d{4})(\d{2})(\d{2})/);
-                    if (match) {
-                        const year = parseInt(match[1]);
-                        if (year >= 1999 && year <= 2100) {
-                            tagYear = year;
-                        }
-                    }
+                if (typeof yt === 'number' && !isNaN(yt) && yt >= 1999 && yt <= 2100) {
+                    tagYear = yt;
                 }
+                // Всё. Никакого парсинга из имени файла. Нет тега в JSON = "-"
                 
-                // Дата из GitHub или из имени файла
+                // Дата для внутренней логики (если есть)
                 let date = githubData.date || null;
-                if (!date) {
-                    const match = key.match(/(\d{4})(\d{2})(\d{2})/);
-                    if (match) {
-                        date = new Date(`${match[1]}-${match[2]}-${match[3]}`).getTime();
-                    }
-                }
                 
                 return { 
                     title: githubData.title || title, 
@@ -280,25 +257,20 @@ async function loadGallery() {
                 };
             });
 
-      console.log(`✅ Галерея: ${galleryPhotos.length} фото`);
+        console.log(`✅ Галерея: ${galleryPhotos.length} фото`);
         window.galleryPhotos = galleryPhotos;
         
-        // 2. Перед сортировкой меняем статус
-        setHeroStatus('sorting');
-        
-        // 3. Запускаем сортировку
+        setHeroStatus('Анализ и сортировка');
         await renderSortedGallery(galleryPhotos);
         
         if (galleryPhotos.length === 0) {
             gallery.innerHTML = '';
         }
 
-        // 4. ВСЁ ГОТОВО — разрешаем свайп и показываем стрелку
         markEverythingReady();
 
     } catch (err) {
         console.error('❌ Ошибка загрузки:', err);
-        // В случае ошибки тоже показываем стрелку (чтобы пользователь не завис)
         markEverythingReady();
     }
 }
