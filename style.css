@@ -46,8 +46,12 @@
     filter: invert(1);
 }
 
-#hero-section.dragging { cursor: grabbing; }
-#hero-section.hidden { transform: translateY(-100%); }
+#hero-section.dragging { 
+    cursor: grabbing; 
+}
+#hero-section.hidden { 
+    transform: translateY(-100%); 
+}
 
 /* Простой статус: текст + лоадер в линию */
 .hero-status {
@@ -109,7 +113,7 @@
 }
 
 /* Блокируем drag фото */
-.gallery, .photo-card, .photo-card img {
+.gallery, .photo-card, .photo-card img, .hero-content {
     user-select: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
