@@ -12,6 +12,40 @@ const GITHUB_CONFIG = {
     jsonPath: 'data/gallery.json'
 };
 
+
+// === УПРАВЛЕНИЕ СТАТУСОМ ЗАГРУЗКИ ===
+function setHeroStatus(status) {
+    const statusEl = document.getElementById('heroStatus');
+    const textEl = document.getElementById('statusText');
+    const loader = document.getElementById('heroLoader');
+    const arrow = document.getElementById('heroArrow');
+    
+    if (!statusEl || !textEl) return;
+    
+    switch(status) {
+        case 'loading':
+            textEl.textContent = 'Загрузка';
+            statusEl.style.display = 'flex';
+            if (loader) loader.style.display = 'flex';
+            if (arrow) arrow.classList.remove('show');
+            break;
+        case 'sorting':
+            textEl.textContent = 'Анализ и сортировка';
+            statusEl.style.display = 'flex';
+            if (loader) loader.style.display = 'flex';
+            if (arrow) arrow.classList.remove('show');
+            break;
+        case 'ready':
+            statusEl.style.display = 'none';
+            if (loader) loader.style.display = 'none';
+            if (arrow) arrow.classList.add('show');
+            console.log('✅ Всё готово! Тяни вверх чтобы войти');
+            break;
+    }
+}
+
+
+
 // Инициализация AWS SDK v2
 AWS.config.update({
     accessKeyId: YANDEX_CONFIG.accessKeyId,
@@ -149,8 +183,8 @@ async function uploadFiles(files) {
 // === ЗАГРУЗКА ГАЛЕРЕИ С АВТОСИНХРОНИЗАЦИЕЙ ===
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
-    gallery.innerHTML = '<div class="loading">Загрузка</div>';
-
+    setHeroStatus('loading');
+    gallery.innerHTML = '';
     try {
         const token = localStorage.getItem('github_token');
         let githubPhotos = [];
@@ -246,32 +280,26 @@ async function loadGallery() {
                 };
             });
 
-        console.log(`✅ Галерея: ${galleryPhotos.length} фото`);
-
-        // 5. Сохраняем глобально и рендерим
+      console.log(`✅ Галерея: ${galleryPhotos.length} фото`);
         window.galleryPhotos = galleryPhotos;
-        gallery.innerHTML = '';
         
-        /*
-        if (sortMode !== 'default') {
-            renderSortedGallery(galleryPhotos);
-        } else {
-            galleryPhotos.forEach(photo => renderCard(photo, -1));
-        }*/
-
-            renderSortedGallery(galleryPhotos);
-
+        // 2. Перед сортировкой меняем статус
+        setHeroStatus('sorting');
+        
+        // 3. Запускаем сортировку
+        await renderSortedGallery(galleryPhotos);
+        
         if (galleryPhotos.length === 0) {
-            gallery.innerHTML = '<div class="loading">Нет фото. Загрузи файлы в Яндекс.</div>';
+            gallery.innerHTML = '';
         }
 
-        // === ✅ ГАЛЕРЕЯ ЗАГРУЖЕНА ===
-        galleryLoaded = true;
-        if (typeof checkReady === 'function') checkReady();
+        // 4. ВСЁ ГОТОВО — разрешаем свайп и показываем стрелку
+        markEverythingReady();
 
     } catch (err) {
         console.error('❌ Ошибка загрузки:', err);
-        gallery.innerHTML = '<div class="loading">Ошибка загрузки. Проверь интернет.</div>';
+        // В случае ошибки тоже показываем стрелку (чтобы пользователь не завис)
+        markEverythingReady();
     }
 }
 
@@ -763,130 +791,130 @@ function getPhotoHueSimple(imgUrl) {
 
 // === СОРТИРОВКА: СВЕТЛЫЕ→ТЁМНЫЕ + ЦВЕТ (HUE) ===
 // === СОРТИРОВКА: ЦВЕТ + СЛОЖНОСТЬ ===
-async function renderSortedGallery(photosSource) {
-    const gallery = document.getElementById('gallery');
-    gallery.innerHTML = '<div class="loading">Анализ и сортировка...</div>';
-    await new Promise(r => setTimeout(r, 30));
+        async function renderSortedGallery(photosSource) {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            await new Promise(r => setTimeout(r, 30));
 
-    let photos = Array.isArray(photosSource) ? [...photosSource] : [];
-    
-    // Фильтр
-    photos = photos.filter(p => {
-        if (!p.key || p.key === 'undefined' || p.key.trim() === '' || p.key === 'null') {
-            return false;
-        }
-        return true;
-    });
-    
-    if (photos.length === 0) {
-        gallery.innerHTML = '<div class="loading">Нет фото</div>';
-        return;
-    }
-
-    // === АНАЛИЗ ВСЕХ ФОТО ===
-    console.log('🎨 Анализирую', photos.length, 'фото...');
-    const photosWithAnalysis = await Promise.all(photos.map(async (p, index) => {
-        const analysis = await analyzePhoto(`${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`);
-        return { ...p, analysis };
-    }));
-
-    // === ГРУППИРОВКА ПО ГОДАМ ===
-    const groups = {};
-    const unknown = [];
-
-    photosWithAnalysis.forEach(p => {
-        const y = p.tagYear;
-        
-        let isValid = false;
-        if (typeof y === 'number' && !isNaN(y) && y >= 1999 && y <= 2100) {
-            isValid = true;
-        }
-        else if (typeof y === 'string') {
-            const num = parseInt(y.trim(), 10);
-            if (!isNaN(num) && num >= 1999 && num <= 2100) {
-                isValid = true;
-                p.tagYear = num;
-            }
-        }
-        
-        if (isValid) {
-            const year = String(p.tagYear);
-            if (!groups[year]) groups[year] = [];
-            groups[year].push(p);
-        } else {
-            unknown.push(p);
-        }
-    });
-
-    // === СОРТИРОВКА ВНУТРИ ГОДА ===
-    Object.keys(groups).forEach(year => {
-        groups[year].sort((a, b) => {
-            // 1. Сначала по цвету (холодные → тёплые)
-            // Сдвиг: синий (240°) → 0, красный (0°) → 120
-            const aHue = (a.analysis.hue + 120) % 360;
-            const bHue = (b.analysis.hue + 120) % 360;
+            let photos = Array.isArray(photosSource) ? [...photosSource] : [];
             
-            const hueDiff = aHue - bHue;
-            
-            // 2. Если цвета похожи (в пределах 60°), сортируем по "простоте"
-            if (Math.abs(hueDiff) < 60) {
-                // Простые и светлые → сложные и тёмные
-                const scoreDiff = b.analysis.simplicityScore - a.analysis.simplicityScore;
-                
-                // Если разница в score > 0.1, используем её
-                if (Math.abs(scoreDiff) > 0.1) {
-                    return scoreDiff;
+            // Фильтр
+            photos = photos.filter(p => {
+                if (!p.key || p.key === 'undefined' || p.key.trim() === '' || p.key === 'null') {
+                    return false;
                 }
+                return true;
+            });
+            
+            if (photos.length === 0) {
+                gallery.innerHTML = '<div class="loading">Нет фото</div>';
+                return;
+            }
+
+            // === АНАЛИЗ ВСЕХ ФОТО ===
+            console.log('🎨 Анализирую', photos.length, 'фото...');
+            const photosWithAnalysis = await Promise.all(photos.map(async (p, index) => {
+                const analysis = await analyzePhoto(`${YANDEX_CONFIG.endpoint}/${YANDEX_CONFIG.bucket}/${p.key}`);
+                return { ...p, analysis };
+            }));
+
+            // === ГРУППИРОВКА ПО ГОДАМ ===
+            const groups = {};
+            const unknown = [];
+
+            photosWithAnalysis.forEach(p => {
+                const y = p.tagYear;
+                
+                let isValid = false;
+                if (typeof y === 'number' && !isNaN(y) && y >= 1999 && y <= 2100) {
+                    isValid = true;
+                }
+                else if (typeof y === 'string') {
+                    const num = parseInt(y.trim(), 10);
+                    if (!isNaN(num) && num >= 1999 && num <= 2100) {
+                        isValid = true;
+                        p.tagYear = num;
+                    }
+                }
+                
+                if (isValid) {
+                    const year = String(p.tagYear);
+                    if (!groups[year]) groups[year] = [];
+                    groups[year].push(p);
+                } else {
+                    unknown.push(p);
+                }
+            });
+
+            // === СОРТИРОВКА ВНУТРИ ГОДА ===
+            Object.keys(groups).forEach(year => {
+                groups[year].sort((a, b) => {
+                    // 1. Сначала по цвету (холодные → тёплые)
+                    // Сдвиг: синий (240°) → 0, красный (0°) → 120
+                    const aHue = (a.analysis.hue + 120) % 360;
+                    const bHue = (b.analysis.hue + 120) % 360;
+                    
+                    const hueDiff = aHue - bHue;
+                    
+                    // 2. Если цвета похожи (в пределах 60°), сортируем по "простоте"
+                    if (Math.abs(hueDiff) < 60) {
+                        // Простые и светлые → сложные и тёмные
+                        const scoreDiff = b.analysis.simplicityScore - a.analysis.simplicityScore;
+                        
+                        // Если разница в score > 0.1, используем её
+                        if (Math.abs(scoreDiff) > 0.1) {
+                            return scoreDiff;
+                        }
+                    }
+                    
+                    // Иначе по цвету
+                    return hueDiff;
+                });
+            });
+
+            // === РЕНДЕРИНГ ===
+            gallery.innerHTML = '';
+            gallery.classList.add('date-mode');
+            
+            const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
+
+            sortedYears.forEach(year => {
+                const section = document.createElement('div');
+                section.className = 'year-section';
+                
+                const header = document.createElement('div');
+                header.className = 'year-header';
+                header.textContent = year;
+                section.appendChild(header);
+                
+                const grid = document.createElement('div');
+                grid.className = 'mosaic-grid';
+                
+                groups[year].forEach(photo => renderCard(photo, -1, false, grid));
+                
+                section.appendChild(grid);
+                gallery.appendChild(section);
+            });
+
+            if (unknown.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'year-section';
+                
+                const header = document.createElement('div');
+                header.className = 'year-header';
+                header.textContent = '-';
+                section.appendChild(header);
+                
+                const grid = document.createElement('div');
+                grid.className = 'mosaic-grid';
+                unknown.forEach(photo => renderCard(photo, -1, true, grid));
+                
+                section.appendChild(grid);
+                gallery.appendChild(section);
             }
             
-            // Иначе по цвету
-            return hueDiff;
-        });
-    });
-
-    // === РЕНДЕРИНГ ===
-    gallery.innerHTML = '';
-    gallery.classList.add('date-mode');
-    
-    const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
-
-    sortedYears.forEach(year => {
-        const section = document.createElement('div');
-        section.className = 'year-section';
-        
-        const header = document.createElement('div');
-        header.className = 'year-header';
-        header.textContent = year;
-        section.appendChild(header);
-        
-        const grid = document.createElement('div');
-        grid.className = 'mosaic-grid';
-        
-        groups[year].forEach(photo => renderCard(photo, -1, false, grid));
-        
-        section.appendChild(grid);
-        gallery.appendChild(section);
-    });
-
-    if (unknown.length > 0) {
-        const section = document.createElement('div');
-        section.className = 'year-section';
-        
-        const header = document.createElement('div');
-        header.className = 'year-header';
-        header.textContent = '-';
-        section.appendChild(header);
-        
-        const grid = document.createElement('div');
-        grid.className = 'mosaic-grid';
-        unknown.forEach(photo => renderCard(photo, -1, true, grid));
-        
-        section.appendChild(grid);
-        gallery.appendChild(section);
-    }
-    
-    console.log('✅ Сортировка завершена');
-}
+            console.log('✅ Сортировка завершена');
+        }
 
 // === КОМПЛЕКСНЫЙ АНАЛИЗ ФОТО ===
 function analyzePhoto(imgUrl) {
@@ -1133,73 +1161,103 @@ window.addEventListener('load', () => {
 });
 
 
-// === ЗАГЛАВНЫЙ БЛОК С ПРОГРЕСС БАРОМ ===
-// === ЗАГЛАВНЫЙ БЛОК С ЛОАДЕРОМ ===
-let heroSection, heroLoader, heroArrow;
-let heroVisible = true;
-let isAnimating = false;
-let isReady = false;
-let galleryLoaded = false;
+// === ЗАГЛАВНЫЙ БЛОК: ФИЗИЧНЫЙ DRAG + СТАТУС ===
+let heroSection;
+let isDragging = false;
+let startY = 0, currentY = 0;
+let heroDismissed = false;
+let isEverythingReady = false; // Флаг: ВСЁ готово
 
-// Инициализация после DOM
 document.addEventListener('DOMContentLoaded', () => {
     heroSection = document.getElementById('hero-section');
-    heroLoader = document.getElementById('heroLoader');
-    heroArrow = document.getElementById('heroArrow');
     
     if (heroSection) {
-        document.body.classList.remove('hero-hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // === MOUSE DRAG ===
+        heroSection.addEventListener('mousedown', (e) => {
+            if (heroDismissed || !isEverythingReady) return;
+            isDragging = true;
+            startY = e.clientY;
+            heroSection.classList.add('dragging');
+        });
+        
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || heroDismissed || !isEverythingReady) return;
+            currentY = e.clientY;
+            const deltaY = currentY - startY;
+            if (deltaY < 0) {
+                heroSection.style.transform = `translateY(${deltaY}px)`;
+            }
+        });
+        
+        window.addEventListener('mouseup', () => {
+            if (!isDragging || heroDismissed || !isEverythingReady) return;
+            isDragging = false;
+            heroSection.classList.remove('dragging');
+            
+            const threshold = window.innerHeight * 0.4;
+            const deltaY = currentY - startY;
+            
+            if (deltaY < -threshold) {
+                dismissHero();
+            } else {
+                heroSection.style.transform = 'translateY(0)';
+            }
+            currentY = 0; startY = 0;
+        });
+        
+        // === TOUCH DRAG ===
+        heroSection.addEventListener('touchstart', (e) => {
+            if (heroDismissed || !isEverythingReady) return;
+            isDragging = true;
+            startY = e.touches[0].clientY;
+            heroSection.classList.add('dragging');
+        }, { passive: true });
+        
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging || heroDismissed || !isEverythingReady) return;
+            currentY = e.touches[0].clientY;
+            const deltaY = currentY - startY;
+            if (deltaY < 0) {
+                heroSection.style.transform = `translateY(${deltaY}px)`;
+            }
+        }, { passive: true });
+        
+        window.addEventListener('touchend', () => {
+            if (!isDragging || heroDismissed || !isEverythingReady) return;
+            isDragging = false;
+            heroSection.classList.remove('dragging');
+            
+            const threshold = window.innerHeight * 0.4;
+            const deltaY = currentY - startY;
+            
+            if (deltaY < -threshold) {
+                dismissHero();
+            } else {
+                heroSection.style.transform = 'translateY(0)';
+            }
+            currentY = 0; startY = 0;
+        });
     }
 });
 
-// Проверка готовности
-function checkReady() {
-    if (galleryLoaded && heroSection && !isReady) {
-        isReady = true;
-        heroSection.classList.add('ready');
-        console.log('✅ Hero ready! Scroll up to enter');
-    }
+function dismissHero() {
+    if (!heroSection || heroDismissed) return;
+    heroDismissed = true;
+    heroSection.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+    heroSection.style.transform = 'translateY(-100%)';
+    setTimeout(() => {
+        heroSection.classList.add('hidden');
+        heroSection.style.display = 'none';
+        document.body.style.overflow = '';
+    }, 400);
 }
 
-// Wheel event (десктоп)
-window.addEventListener('wheel', (e) => {
-    if (isAnimating || !isReady || !heroVisible) return;
-    
-    if (e.deltaY < -50) {
-        e.preventDefault();
-        dismissHero();
-    }
-}, { passive: false });
-
-// Touch events (мобильные)
-let touchStartY = 0;
-window.addEventListener('touchstart', (e) => {
-    touchStartY = e.touches[0].clientY;
-}, { passive: true });
-
-window.addEventListener('touchend', (e) => {
-    if (isAnimating || !isReady || !heroVisible) return;
-    
-    const diff = touchStartY - e.changedTouches[0].clientY;
-    if (diff < -100) {
-        dismissHero();
-    }
-}, { passive: false });
-
-// Функция скрытия героя
-function dismissHero() {
-    if (!heroSection) return;
-    
-    isAnimating = true;
-    heroVisible = false;
-    
-    heroSection.classList.add('hidden');
-    document.body.classList.add('hero-hidden');
-    
-    setTimeout(() => {
-        heroSection.style.display = 'none';
-        isAnimating = false;
-    }, 600);
+// Функция готовности (вызывается когда ВСЁ сделано)
+function markEverythingReady() {
+    isEverythingReady = true;
+    setHeroStatus('ready');
 }
 
 

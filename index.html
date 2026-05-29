@@ -6,15 +6,25 @@
     <title>Shevtsov Media</title>
     <link rel="stylesheet" href="style.css">
 </head>
-    <!-- Заглавный блок (прелоадер) - ВНЕ BODY -->
-    <div id="hero-section">
+   <!-- Заглавный блок (прелоадер) -->
+<div id="hero-section">
     <div class="hero-content">
         <img src="icons/logo.png" alt="Logo" class="hero-logo">
     </div>
-    <!-- Лоадер -->
+    
+    <!-- Статус загрузки -->
+    <div class="hero-status" id="heroStatus">
+        <span class="status-text" id="statusText">Загрузка</span>
+        <div class="status-dots">
+            <span></span><span></span><span></span>
+        </div>
+    </div>
+    
+    <!-- Лоадер (крутится) -->
     <div class="hero-loader" id="heroLoader">
         <img src="icons/loader.png" alt="Loading..." class="loader-icon">
     </div>
+    
     <!-- Стрелка (показывается когда готово) -->
     <div class="hero-arrow" id="heroArrow">
         <img src="icons/arrowdown.png" alt="Scroll" class="arrow-icon">
