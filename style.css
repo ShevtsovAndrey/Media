@@ -163,14 +163,27 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 24px;
     opacity: 0;
-    background: var(--bgoverlay);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     transition: opacity 0.25s ease;
-    pointer-events: none;
+    pointer-events: none; /* Пропускаем клики сквозь оверлей */
     z-index: 15;
+}
+
+/* ДЕСКТОП: показываем при наведении */
+@media (hover: hover) and (pointer: fine) {
+    .photo-card:hover .delete-overlay {
+        opacity: 1;
+    }
+}
+
+/* МОБИЛЬНЫЕ: показываем через класс .show-menu */
+.photo-card.show-menu .delete-overlay {
+    opacity: 1;
+    pointer-events: auto; /* Блокируем клики когда меню активно */
 }
 
 .photo-card img {
@@ -189,6 +202,65 @@ body {
     opacity: 1;
     pointer-events: auto;
 }
+
+
+/* Кнопка редактирования рядом с удалением */
+.delete-overlay {
+    position: absolute; 
+    display:flex; 
+    gap:6px; 
+    align-items:flex-start;
+    justify-content: flex-start; 
+    opacity: 0.3;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 9999;    
+}
+
+.delete-btn, .edit-meta-btn {
+    width: 48px;
+    height: 48px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s ease;
+    pointer-events: auto; /* Кнопки всегда кликабельны */
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.delete-btn:hover, .edit-meta-btn:hover {
+    transform: scale(1.15);
+}
+
+.delete-btn:active, .edit-meta-btn:active {
+    transform: scale(0.95);
+}
+
+.delete-btn img, .edit-meta-btn img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    pointer-events: none;
+    filter: invert(1);
+}
+
+@media (prefers-color-scheme: light) {
+    .delete-btn img, .edit-meta-btn img { filter: invert(0); }
+    .photo-card .delete-overlay { background: rgba(255, 255, 255, 0.15); }
+}
+
+
+
+
 
 /*КНОПКИ ВНИЗУ*/
 
@@ -214,7 +286,7 @@ body {
     z-index: 100; 
 }
 
-.add-btn:hover, .sort-btn:hover {
+.add-btn:hover {
     transform: scale(1.05);
     background: rgba(255, 255, 255, 0.1); /* чуть ярче при наведении */
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
@@ -339,60 +411,6 @@ body {
 @keyframes spin {
     100% { transform: rotate(360deg); }
 }
-
-/* Кнопка редактирования рядом с удалением */
-.delete-overlay {
-    position: absolute; 
-    display:flex; 
-    gap:6px; 
-    align-items:flex-start;
-    justify-content: flex-start; 
-    opacity: 0.3;
-    transition: opacity 0.2s;
-    pointer-events: none;
-    z-index: 9999;    
-}
-
-.delete-btn, .edit-meta-btn {
-    background: transparent;
-    border-radius: 50%;
-    mix-blend-mode: multiply;
-    width: 48px;
-    height: 48px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-    padding: 0;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.delete-btn:hover, .edit-meta-btn:hover {
-    transform: scale(1.1);
-}
-
-.delete-btn:active, .edit-meta-btn:active {
-    transform: scale(0.95);
-}
-
-.delete-btn img,
-.edit-meta-btn img {
-    pointer-events: none;
-filter: invert(1);
-}
-
-
-
-
-
-
-
-
-
 
 
             /*ВЫ ВХОДИТЕ В СВЕТЛУЮ ТЕМУ! АККУРАТНЕЕ С НАСТРОЙКАМИ!*/

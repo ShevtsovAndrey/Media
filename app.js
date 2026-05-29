@@ -276,6 +276,7 @@ async function loadGallery() {
 }
 
 // Рендер карточки (исправлено: явные имена параметров)
+// Рендер карточки (с разделением тач/десктоп)
 function renderCard(photo, index, isNoDate = false, target = null) {
     const card = document.createElement('div');
     card.className = 'photo-card' + (isNoDate ? ' no-date' : '');
@@ -290,25 +291,86 @@ function renderCard(photo, index, isNoDate = false, target = null) {
     img.style.cursor = 'pointer';
     img.onerror = () => { card.style.display = 'none'; };
 
-    // Touch/Click для лайтбокса
+    // === ОТКРЫТИЕ ЛАЙТБОКСА ===
+    const openLightboxHandler = (e) => {
+        // Если меню открыто (на мобильных) — не открываем лайтбокс
+        if (card.classList.contains('show-menu')) return;
+        
+        e.preventDefault();
+        e.stopPropagation();
+        openLightbox(imgUrl);
+    };
+
+    img.addEventListener('click', openLightboxHandler);
+    
+    // Touch события для мобильных
     let touchStartX = 0, touchStartY = 0;
+    let touchTimer = null;
+    const LONG_PRESS_DELAY = 500; // 500ms для long press
+
     img.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        
+        // Запускаем таймер для long press
+        touchTimer = setTimeout(() => {
+            // Long press detected — показываем меню
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Закрываем другие открытые меню
+            document.querySelectorAll('.photo-card.show-menu').forEach(c => {
+                c.classList.remove('show-menu');
+            });
+            
+            card.classList.add('show-menu');
+            
+            // Вибрация (если поддерживается)
+            if (navigator.vibrate) navigator.vibrate(50);
+        }, LONG_PRESS_DELAY);
     }, { passive: true });
+
     img.addEventListener('touchend', (e) => {
-        if (Math.abs(e.changedTouches[0].clientX - touchStartX) < 15 &&
-            Math.abs(e.changedTouches[0].clientY - touchStartY) < 15) {
-            e.preventDefault(); e.stopPropagation(); openLightbox(imgUrl);
+        // Очищаем таймер
+        if (touchTimer) {
+            clearTimeout(touchTimer);
+            touchTimer = null;
         }
-    }, { passive: false });
-    img.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation(); openLightbox(imgUrl);
-    });
+        
+        // Если меню уже открыто — не обрабатываем обычный тап
+        if (card.classList.contains('show-menu')) return;
+        
+        // Проверяем, был ли это просто тап (без сильного движения)
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const diffX = Math.abs(touchEndX - touchStartX);
+        const diffY = Math.abs(touchEndY - touchStartY);
+        
+        if (diffX < 15 && diffY < 15) {
+            // Это был тап — открываем лайтбокс
+            openLightboxHandler(e);
+        }
+    }, { passive: true });
+
+    // Отмена long press при движении
+    img.addEventListener('touchmove', () => {
+        if (touchTimer) {
+            clearTimeout(touchTimer);
+            touchTimer = null;
+        }
+    }, { passive: true });
 
     // === КНОПКИ (только админу) ===
     if (isAdmin) {
         const overlay = document.createElement('div');
         overlay.className = 'delete-overlay';
+        
+        // Клик по оверлею (мимо кнопок) — закрываем меню на мобильных
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                card.classList.remove('show-menu');
+            }
+        });
         
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
@@ -316,6 +378,7 @@ function renderCard(photo, index, isNoDate = false, target = null) {
         delBtn.innerHTML = '<img src="icons/delete.png" alt="Удалить">';
         delBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            card.classList.remove('show-menu');
             deletePhoto(photo.key, photo.title, card);
         });
         
@@ -331,16 +394,24 @@ function renderCard(photo, index, isNoDate = false, target = null) {
                 currentVal = new Date(photo.date).getFullYear();
             }
             const newYear = prompt('Введите год для фотографии:', currentVal);
-            if (newYear === null) return;
+            if (newYear === null) {
+                card.classList.remove('show-menu');
+                return;
+            }
             const yearNum = parseInt(newYear);
             if (isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
                 alert('Нужна дата от 1999-?');
+                card.classList.remove('show-menu');
                 return;
             }
             try {
                 await syncJSON([{ key: photo.key, tagYear: yearNum }], 'updateTag');
+                card.classList.remove('show-menu');
                 loadGallery();
-            } catch (err) { alert('Ошибка сохранения'); }
+            } catch (err) { 
+                alert('Ошибка сохранения');
+                card.classList.remove('show-menu');
+            }
         });
         
         overlay.appendChild(delBtn);
