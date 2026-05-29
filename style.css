@@ -46,6 +46,20 @@
     filter: invert(1);
 }
 
+
+/* ЛОГОТИП — ПОЛНОСТЬЮ НЕКЛИКАБЕЛЬНЫЙ */
+.hero-logo,
+.hero-logo img {
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-user-drag: none !important;
+    -webkit-touch-callout: none !important;
+    touch-action: none !important;
+    cursor: default !important;
+}
+
+
 #hero-section.dragging { 
     cursor: grabbing; 
 }
