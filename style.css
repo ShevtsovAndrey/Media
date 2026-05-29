@@ -503,35 +503,164 @@ body {
 
 
 
-/* === МОЗАИКА — MASONRY (JS) === */
-.mosaic-grid {
+/* === МОЗАИКА — MASONRY (БЕЗ РАЗРЫВОВ) === */
+
+#gallery.date-mode {
+    height: 100vh;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
+    display: block !important;
+    scroll-padding: 0;
+}
+
+.year-section {
+    height: auto;
+    min-height: 80vh;
     width: 100%;
-    margin: 0 auto;
-    /* Убираем column-count и grid-template-columns */
-}
-
-.mosaic-grid .photo-card {
-    width: 33.333%; /* Мобильные: 3 колонки */
-    padding: 2px;
+    scroll-snap-align: start;
+    padding: 0; /* Исправлено: auto не валидно для padding */
     box-sizing: border-box;
-    float: left; /* Masonry требует float для расчётов */
 }
 
+/* === ЗАГОЛОВОК === */
+.year-section .year-header {
+    width: 100%;
+    text-align: center;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 20vh !important;
+    font-weight: 200;
+    line-height: 1;
+    margin: 2vh !important;
+    padding: 0 !important;
+    margin-bottom: 2vh !important;
+    height: 18vh;
+}
+
+/* === МОЗАИКА: 3 КОЛОНКИ (МОБИЛЬНЫЕ) === */
+.mosaic-grid {
+    column-count: 3;
+    column-gap: 2px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto; /* Гарантирует центрирование */
+    line-height: 0;
+}
+
+/* Если фото ОДНО — по центру */
+.mosaic-grid:has(.photo-card:only-child) {
+    column-count: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+}
+.mosaic-grid:has(.photo-card:only-child) .photo-card {
+    width: 100%;
+    max-height: 80vh;
+}
+.mosaic-grid:has(.photo-card:only-child) .photo-card img {
+    max-height: 100%;
+}
+
+/* Если фото ДВА — 2 колонки */
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) {
+    column-count: 1;
+}
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card {
+    max-height: 50vh;
+}
+.mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img {
+    max-height: 50vh;
+}
+
+/* Карточки */
+.mosaic-grid .photo-card {
+    break-inside: avoid !important;
+    display: inline-block !important; /* Ключевое для column-layout */
+    width: 100% !important;
+    margin: 0 0 2px 0 !important;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Изображения */
 .mosaic-grid .photo-card img {
     width: 100%;
     height: auto;
     display: block;
-    object-fit: contain; /* ПОЛНЫЙ РАЗМЕР, без обрезки */
+    margin: 0;
+    padding: 0;
+    vertical-align: top;
+    object-fit: contain;
+    max-height: 50vh;
     line-height: 0;
 }
 
-/* === ДЕСКТОП: 5 КОЛОНОК === */
+/* === ДЕСКТОП: 6 КОЛОНОК === */
 @media (min-width: 1024px) {
+    .mosaic-grid {
+        column-count: 6;
+        column-gap: 4px;
+        width: 100%;
+        margin: 0 auto;
+    }
+    
     .mosaic-grid .photo-card {
-        width: 20%; /* 5 колонок */
-        padding: 4px;
+        margin: 0 0 4px 0 !important;
+    }
+    
+    .mosaic-grid .photo-card img {
+        max-height: 50vh;
+    }
+    
+    /* 1 фото — по центру */
+    .mosaic-grid:has(.photo-card:only-child) {
+        column-count: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mosaic-grid:has(.photo-card:only-child) .photo-card {
+        max-height: 100vh;
+        max-width: 100%;
+    }
+    .mosaic-grid:has(.photo-card:only-child) .photo-card img {
+        max-height: 50vh;
+        max-width: 100%;
+        width: auto;
+    }
+    
+                            /* 2 фото — 2 колонки */
+    
+    .mosaic-grid:has(.photo-card:nth-child(2):last-child) {
+        column-count: 2;
+    }
+    .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card {
+        max-height: 100vh;
+        max-width:50vw;
+    }
+    .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img {
+        max-height: 100%;
+        max-width:50vw;
+    }
+    
+    /* 3+ фото — 6 колонок */
+    .mosaic-grid:not(:has(.photo-card:only-child)):not(:has(.photo-card:nth-child(2):last-child)) {
+        column-count: 6;
     }
 }
+
+#gallery.date-mode > .photo-card { 
+    display: none; 
+}
+
 
 
 
