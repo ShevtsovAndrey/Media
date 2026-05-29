@@ -328,6 +328,7 @@ function analyzePhoto(imgUrl) {
     });
 }
 
+// === RGB → HSL ===
 function rgbToHSL(r, g, b) {
     r /= 255; g /= 255; b /= 255;
     const max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
@@ -339,6 +340,17 @@ function rgbToHSL(r, g, b) {
         else h = ((r - g) / delta + 4) / 6;
     }
     return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+// === НОВЫЙ: ВЫЧИСЛЕНИЕ ВИЗУАЛЬНОГО СКОРА (УСИЛЕННАЯ ЯРКОСТЬ) ===
+function computeVisualScore(hue, saturation, lightness) {
+    // hue: 0-360 → 0-20 (оттенок, минимальный вес)
+    // saturation: 0-100 → 0-20 (насыщенность, средний вес)
+    // lightness: 0-100 → 60-0 (яркость, ДОМИНИРУЮЩИЙ вес, инвертируем)
+    const hScore = (hue / 360) * 20;
+    const sScore = (saturation / 100) * 20;
+    const lScore = ((100 - lightness) / 100) * 60; // ← ЯРКОСТЬ ГЛАВНАЯ!
+    return hScore + sScore + lScore; // Максимум 100
 }
 
 // === СОРТИРОВКА + РЕНДЕРИНГ + MASONRY ===
@@ -367,14 +379,12 @@ async function renderSortedGallery(photosSource) {
         else unknown.push(p);
     });
     
-    // Сортировка: Светлые/Яркие → Тёмные
+    // === НОВАЯ СОРТИРОВКА: по визуальному скору (светлые/насыщенные → тёмные/блёклые) ===
     Object.keys(groups).forEach(year => {
         groups[year].sort((a, b) => {
-            const lightDiff = b.analysis.lightness - a.analysis.lightness;
-            if (Math.abs(lightDiff) > 5) return lightDiff;
-            const satDiff = b.analysis.saturation - a.analysis.saturation;
-            if (Math.abs(satDiff) > 5) return satDiff;
-            return a.analysis.hue - b.analysis.hue;
+            const scoreA = computeVisualScore(a.analysis.hue, a.analysis.saturation, a.analysis.lightness);
+            const scoreB = computeVisualScore(b.analysis.hue, b.analysis.saturation, b.analysis.lightness);
+            return scoreA - scoreB; // По возрастанию: 0 (светлое/насыщенное) → 100 (тёмное/блёклое)
         });
     });
     
