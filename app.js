@@ -366,11 +366,11 @@ function renderCard(photo, index, isNoDate = false, target = null) {
         overlay.className = 'delete-overlay';
         
         // Клик по оверлею (мимо кнопок) — закрываем меню на мобильных
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                card.classList.remove('show-menu');
-            }
-        });
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay && card.classList.contains('show-menu')) {
+            card.classList.remove('show-menu');
+        }
+    });
         
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
@@ -1364,28 +1364,24 @@ function disableSnap() {
 }
 
 galleryEl.addEventListener('mousedown', (e) => {
-    // Игнорируем клики по кнопкам и оверлеям
-    if (e.target.closest('.delete-overlay, .lightbox, .add-btn, .sort-btn')) return;
+    // Игнорируем, если клик по кнопкам или лайтбоксу
+    if (e.target.closest('.delete-btn, .edit-meta-btn, .lightbox, .add-btn')) return;
     if (!galleryEl.classList.contains('date-mode')) return;
     
     isGalleryDrag = true;
     dragMoved = false;
     dragStartY = e.pageY;
     dragScrollStart = galleryEl.scrollTop;
-    
-    // Отключаем снап для свободного скролла
-    disableSnap();
     galleryEl.style.cursor = 'grabbing';
 });
 
 window.addEventListener('mousemove', (e) => {
     if (!isGalleryDrag) return;
     
-    // Порог 10px: отличаем клик от драга
     if (Math.abs(e.pageY - dragStartY) > 10) dragMoved = true;
     
     if (dragMoved) {
-        e.preventDefault(); // Блокируем выделение текста
+        e.preventDefault();
         galleryEl.scrollTop = dragScrollStart - (e.pageY - dragStartY);
     }
 });
@@ -1394,9 +1390,6 @@ window.addEventListener('mouseup', () => {
     if (!isGalleryDrag) return;
     isGalleryDrag = false;
     galleryEl.style.cursor = '';
-    
-    // Возвращаем снап с небольшой задержкой
-    setTimeout(enableSnap, 100);
 });
 
 // ПЕРЕХВАТ КЛИКА: если был драг — блокируем открытие фото
@@ -1407,14 +1400,14 @@ galleryEl.addEventListener('click', (e) => {
         e.stopImmediatePropagation();
         dragMoved = false;
     }
-}, true); // capture phase
+}, true);
+
 
 galleryEl.addEventListener('mouseleave', () => {
     if (isGalleryDrag) {
         isGalleryDrag = false;
         dragMoved = false;
         galleryEl.style.cursor = '';
-        setTimeout(enableSnap, 100);
     }
 });
 
