@@ -109,13 +109,11 @@
 }
 
 /* Блокируем drag фото */
-body, .gallery, .photo-card, .photo-card img {
+.gallery, .photo-card, .photo-card img {
     user-select: none;
     -webkit-user-select: none;
     -webkit-user-drag: none;
 }
-.photo-card img { pointer-events: none; }
-.photo-card { pointer-events: auto; }
 
 @media (max-width: 768px) {
     .hero-arrow { width: 30px; height: 30px; }
@@ -134,6 +132,9 @@ body {
     background: var(--bg); 
     font-family: system-ui, -apple-system, sans-serif; 
     overflow-x: hidden; 
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
 
@@ -644,3 +645,28 @@ filter: invert(1);
 #gallery.date-mode > .photo-card { 
     display: none; 
 }
+
+
+
+
+
+
+
+
+body[data-theme="light"] {
+  background: var(--bg-light) !important;
+  color: var(--text-light) !important;
+}
+body[data-theme="light"] .hero-content { background: var(--bg-light) !important; filter: invert(0) !important; }
+body[data-theme="light"] .hero-logo { mix-blend-mode: multiply !important; }
+body[data-theme="light"] .year-header { color: var(--text-light) !important; text-shadow: none !important; }
+body[data-theme="light"] .add-btn, body[data-theme="light"] .sort-btn { background: var(--bgoverlay-light) !important; color: var(--text-light) !important; }
+body[data-theme="light"] .sort-btn img, body[data-theme="light"] .delete-btn img, body[data-theme="light"] .edit-meta-btn img, body[data-theme="light"] .add-btn .loading-icon { filter: invert(0) !important; }
+body[data-theme="light"] .delete-btn, body[data-theme="light"] .edit-meta-btn { background: var(--bgoverlay-light) !important; }
+body[data-theme="light"] .drag-overlay { background: rgba(255,255,255,0.75) !important; color: #000 !important; text-shadow: none !important; }
+body[data-theme="light"] .loading { color: #333 !important; }
+body[data-theme="light"] .lightbox.active { background: var(--bgoverlay-light) !important; }
+body[data-theme="light"] #statusText { color: #000 !important; }
+body[data-theme="light"] .hero-progress { background: rgba(0,0,0,0.1) !important; }
+body[data-theme="light"] .hero-progress-bar { background: linear-gradient(90deg, #000, #666) !important; box-shadow: 0 0 10px rgba(0,0,0,0.3) !important; }
+body[data-theme="light"] .hero-arrow img, body[data-theme="light"] .status-loader { filter: invert(0) !important; }

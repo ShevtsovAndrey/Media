@@ -1274,3 +1274,21 @@ window.addEventListener('load', () => {
         }
     }, 1000);
 });
+
+// === УПРАВЛЕНИЕ ТЕМОЙ ИЗ КОНСОЛИ ===
+window.setTheme = function(mode) {
+  const body = document.body;
+  if (mode === 'light' || mode === 'dark' || mode === 'auto') {
+    body.setAttribute('data-theme', mode === 'auto' ? '' : mode);
+    localStorage.setItem('theme-force', mode);
+    console.log(`🎨 Тема: ${mode} | Команды: setTheme('light'), setTheme('dark'), setTheme('auto')`);
+  } else {
+    console.warn('️ Используй: setTheme("light"), setTheme("dark") или setTheme("auto")');
+  }
+}
+
+// Применяем сохранённую тему при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('theme-force');
+  if (saved) window.setTheme(saved);
+});
