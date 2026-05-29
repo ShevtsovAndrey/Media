@@ -23,6 +23,7 @@
     justify-content: center;
     will-change: transform;
     user-select: none;
+    overflow: hidden; /* ← Убирает чёрную полосу справа */
 }
 
 .hero-content {
@@ -30,9 +31,10 @@
     display: flex; align-items: center; justify-content: center;
     padding: 10vh 4vw; box-sizing: border-box;
     filter: invert(1);
+    position: relative;
 }
 
-.hero-logo, .hero-logo img {
+.hero-logo {
     pointer-events: none !important;
     user-select: none !important;
     -webkit-user-drag: none !important;
@@ -41,31 +43,62 @@
     cursor: default !important;
 }
 
+.hero-logo img{
+    height: 20vh;
+    width: 20vw;
+    pointer-events: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+    -webkit-touch-callout: none !important;
+    touch-action: none !important;
+    cursor: default !important;
+}
+
+
+/* Большой лоадер строго по центру */
+#bigLoader {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px; 
+    height: 200px;
+    object-fit: contain;
+    animation: spin 1.2s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+}
+
 #hero-section.dragging { cursor: grabbing; }
 #hero-section.hidden { transform: translateY(-100%); }
 
+/* Текст статуса чуть ниже центра (под лого) */
 .hero-status {
-    position: absolute; bottom: 2vh; left: 50%;
+    position: absolute;
+    bottom: 35vh; /* Чуть ниже середины */
+    left: 50%;
     transform: translateX(-50%);
-    display: flex; align-items: center; gap: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
 }
 
 #statusText {
-    color: #fff; font-size: 12px; text-transform: uppercase;
+    color: #fff;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
 }
 
-.status-loader {
-    width: 24px; height: 24px;
-    animation: spin 1s linear infinite;
-    filter: invert(1);
-}
-
+/* Стрелка ВНИЗУ, как было изначально (не тронута) */
 .hero-arrow {
     position: absolute; bottom: 2vh; left: 50%;
     transform: translateX(-50%);
     width: 24px; height: 24px;
     opacity: 0; pointer-events: none;
     transition: opacity 0.3s;
+    z-index: 1;
 }
 
 .hero-arrow img {
@@ -74,10 +107,16 @@
     animation: bounce 1.5s ease-in-out infinite;
 }
 
-#hero-section.ready .hero-status { display: none; }
+#hero-section.ready #bigLoader,
+#hero-section.ready .hero-status { 
+    display: none; 
+}
 #hero-section.ready .hero-arrow { opacity: 1; pointer-events: auto; }
 
-@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
 @keyframes bounce {
     0%, 100% { transform: translateX(-50%) translateY(0); }
     50% { transform: translateX(-50%) translateY(-8px); }
@@ -89,9 +128,11 @@
 }
 
 @media (max-width: 768px) {
-    .hero-arrow { width: 30px; height: 30px; }
+    .hero-arrow { width: 24px; height: 24px; }
     #statusText { font-size: 12px; }
+    #bigLoader { width: 200px; height: 200px; }
 }
+
 
 body {
     background: var(--bg);

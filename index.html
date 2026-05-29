@@ -8,16 +8,21 @@
 </head>
 
 <!-- Заглавный блок (фиксированный, может быть до body) -->
+<!-- Заглавный блок -->
 <div id="hero-section">
     <div class="hero-content">
         <img src="icons/logo.png" alt="Logo" class="hero-logo" draggable="false">
+<img src="icons/bigloader.png" id="bigLoader" alt="" draggable="false">
     </div>
+    
+    <!-- Статус теперь в потоке под лоадером -->
     <div class="hero-status" id="heroStatus">
         <span id="statusText">Загрузка</span>
-        <img src="icons/loader.png" alt="" class="status-loader">
     </div>
+    
+    <!-- Стрелка тоже в потоке -->
     <div class="hero-arrow" id="heroArrow">
-        <img src="icons/arrowdown.png" alt="Scroll">
+        <img src="icons/arrowdown.png" alt="Scroll" draggable="false">
     </div>
 </div>
     

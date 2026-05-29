@@ -16,7 +16,7 @@ const GITHUB_CONFIG = {
 function setHeroStatus(status) {
     const statusEl = document.getElementById('heroStatus');
     const textEl = document.getElementById('statusText');
-    const loader = document.getElementById('heroLoader');
+    const bigLoader = document.getElementById('bigLoader');
     const arrow = document.getElementById('heroArrow');
     if (!statusEl || !textEl) return;
     
@@ -24,18 +24,18 @@ function setHeroStatus(status) {
         case 'loading':
             textEl.textContent = 'Загрузка';
             statusEl.style.display = 'flex';
-            if (loader) loader.style.display = 'flex';
+            if (bigLoader) bigLoader.style.display = 'block';
             if (arrow) arrow.classList.remove('show');
             break;
         case 'sorting':
             textEl.textContent = 'Анализ и сортировка';
             statusEl.style.display = 'flex';
-            if (loader) loader.style.display = 'flex';
+            if (bigLoader) bigLoader.style.display = 'block';
             if (arrow) arrow.classList.remove('show');
             break;
         case 'ready':
             statusEl.style.display = 'none';
-            if (loader) loader.style.display = 'none';
+            if (bigLoader) bigLoader.style.display = 'none';
             if (arrow) arrow.classList.add('show');
             break;
     }
