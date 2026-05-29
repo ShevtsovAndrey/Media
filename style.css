@@ -21,22 +21,20 @@
 
 
 /*                                              === ЗАГЛАВНЫЙ БЛОК === */
-/* === ЗАГЛАВНЫЙ БЛОК (ФИЗИЧНЫЙ DRAG) === */
+/* === ЗАГЛАВНЫЙ БЛОК === */
 #hero-section {
     position: fixed;
-    top: 0; 
-    left: 0;
-    width: 100%; 
-    height: 100vh;
+    top: 0; left: 0;
+    width: 100%; height: 100vh;
     background: var(--bg);
+    z-index: 99999;
     display: flex;
     align-items: center;
     justify-content: center;
     will-change: transform;
     user-select: none;
-    -webkit-user-select: none;
-    z-index: 99999;
 }
+
 .hero-content {
     width: 100%;
     height: 100%;
@@ -48,106 +46,61 @@
     filter: invert(1);
 }
 
-#hero-section.hidden {
-    transform: translateY(-100%);
-}
+#hero-section.dragging { cursor: grabbing; }
+#hero-section.hidden { transform: translateY(-100%); }
 
-/* Лоадер и стрелка */
-.hero-loader, .hero-arrow {
-    position: absolute;
-    bottom: 3vh; left: 50%;
-    transform: translateX(-50%);
-    width: 40px; height: 40px;
-    display: flex; align-items: center; justify-content: center;
-    pointer-events: none;
-}
-.hero-loader img, .hero-arrow img {
-    width: 100%; height: 100%; object-fit: contain;
-    filter: invert(1);
-}
-.hero-loader img { 
-animation: spin 1s linear infinite; 
-}
-.hero-arrow { opacity: 0; transition: opacity 0.3s ease; }
-.hero-arrow.show { opacity: 1; animation: bounce 1.5s ease-in-out infinite; }
-
-@keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes bounce { 
-    0%, 100% { transform: translateX(-50%) translateY(0); } 
-    50% { transform: translateX(-50%) translateY(-8px); } 
-}
-
-@media (max-width: 768px) {
-    .hero-loader, .hero-arrow { width: 30px; height: 30px; }
-}
-
-/* === СТАТУС ЗАГРУЗКИ НА HERO === */
+/* Простой статус: текст + лоадер в линию */
 .hero-status {
     position: absolute;
-    bottom: 10vh;
+    bottom: 2vh;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    z-index: 10;
 }
 
-.status-text {
+#statusText {
     color: var(--bg);
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 2px;
-    opacity: 0.8;
-    font-weight: 300;
 }
 
-/* Анимация точек */
-.status-dots {
-    display: flex;
-    gap: 4px;
-}
-.status-dots span {
-    width: 4px;
-    height: 4px;
-    background: var(--bg);
-    border-radius: 50%;
-    animation: pulse 1.4s ease-in-out infinite;
-}
-.status-dots span:nth-child(2) { animation-delay: 0.2s; }
-.status-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes pulse {
-    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-    40% { opacity: 1; transform: scale(1.2); }
+.status-loader {
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    filter: invert(0);
 }
 
-/* Когда готово — скрываем статус и лоадер, показываем стрелку */
-#hero-section.ready .hero-status,
-#hero-section.ready .hero-loader {
-    display: none;
-}
-#hero-section.ready .hero-arrow {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-/* Лоадер и стрелка */
-.hero-loader, .hero-arrow {
+/* Стрелка */
+.hero-arrow {
     position: absolute;
-    bottom: 3vh; left: 50%;
+    bottom: 2vh;
+    left: 50%;
     transform: translateX(-50%);
-    width: 40px; height: 40px;
-    display: flex; align-items: center; justify-content: center;
+    width: 24px;
+    height: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
 }
-.hero-loader img, .hero-arrow img {
-    width: 100%; height: 100%; object-fit: contain;
+
+.hero-arrow img {
+    width: 100%;
+    height: 100%;
     filter: invert(1);
+    animation: bounce 1.5s ease-in-out infinite;
 }
-.hero-loader img { animation: spin 1s linear infinite; }
-.hero-arrow { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-.hero-arrow.show { opacity: 1; animation: bounce 1.5s ease-in-out infinite; }
+
+/* Когда готово */
+#hero-section.ready .hero-status { 
+    display: none; 
+}
+#hero-section.ready .hero-arrow { 
+    opacity: 1; 
+    pointer-events: auto; 
+}
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
 @keyframes bounce { 
@@ -155,7 +108,7 @@ animation: spin 1s linear infinite;
     50% { transform: translateX(-50%) translateY(-8px); } 
 }
 
-/* Блокируем выделение и drag для всего сайта */
+/* Блокируем drag фото */
 body, .gallery, .photo-card, .photo-card img {
     user-select: none;
     -webkit-user-select: none;
@@ -165,10 +118,9 @@ body, .gallery, .photo-card, .photo-card img {
 .photo-card { pointer-events: auto; }
 
 @media (max-width: 768px) {
-    .hero-loader, .hero-arrow { width: 30px; height: 30px; }
-    .status-text { font-size: 12px; }
+    .hero-arrow { width: 30px; height: 30px; }
+    #statusText { font-size: 12px; }
 }
-
 
 
 

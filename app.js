@@ -789,7 +789,7 @@ function getPhotoHueSimple(imgUrl) {
 */
 
 
-// === СОРТИРОВКА: СВЕТЛЫЕ→ТЁМНЫЕ + ЦВЕТ (HUE) ===
+
 // === СОРТИРОВКА: ЦВЕТ + СЛОЖНОСТЬ ===
         async function renderSortedGallery(photosSource) {
             const gallery = document.getElementById('gallery');
@@ -1161,12 +1161,12 @@ window.addEventListener('load', () => {
 });
 
 
-// === ЗАГЛАВНЫЙ БЛОК: ФИЗИЧНЫЙ DRAG + СТАТУС ===
+// === ЗАГЛАВНЫЙ БЛОК: ПРОСТОЙ DRAG + СТАТУС ===
 let heroSection;
 let isDragging = false;
 let startY = 0, currentY = 0;
 let heroDismissed = false;
-let isEverythingReady = false; // Флаг: ВСЁ готово
+let isEverythingReady = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     heroSection = document.getElementById('hero-section');
@@ -1174,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (heroSection) {
         document.body.style.overflow = 'hidden';
         
-        // === MOUSE DRAG ===
+        // Mouse
         heroSection.addEventListener('mousedown', (e) => {
             if (heroDismissed || !isEverythingReady) return;
             isDragging = true;
@@ -1197,9 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             heroSection.classList.remove('dragging');
             
             const threshold = window.innerHeight * 0.4;
-            const deltaY = currentY - startY;
-            
-            if (deltaY < -threshold) {
+            if (currentY - startY < -threshold) {
                 dismissHero();
             } else {
                 heroSection.style.transform = 'translateY(0)';
@@ -1207,7 +1205,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentY = 0; startY = 0;
         });
         
-        // === TOUCH DRAG ===
+        // Touch
         heroSection.addEventListener('touchstart', (e) => {
             if (heroDismissed || !isEverythingReady) return;
             isDragging = true;
@@ -1230,9 +1228,7 @@ document.addEventListener('DOMContentLoaded', () => {
             heroSection.classList.remove('dragging');
             
             const threshold = window.innerHeight * 0.4;
-            const deltaY = currentY - startY;
-            
-            if (deltaY < -threshold) {
+            if (currentY - startY < -threshold) {
                 dismissHero();
             } else {
                 heroSection.style.transform = 'translateY(0)';
@@ -1254,12 +1250,15 @@ function dismissHero() {
     }, 400);
 }
 
-// Функция готовности (вызывается когда ВСЁ сделано)
 function markEverythingReady() {
     isEverythingReady = true;
-    setHeroStatus('ready');
+    if (heroSection) heroSection.classList.add('ready');
 }
 
+function setHeroStatus(text) {
+    const statusEl = document.getElementById('statusText');
+    if (statusEl) statusEl.textContent = text;
+}
 
 // Старт
 loadGallery();
