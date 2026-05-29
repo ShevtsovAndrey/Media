@@ -1341,91 +1341,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-
-// === ДВОЙНОЙ СКРОЛЛ: DRAG (свободный) + WHEEL (снап по годам) ===
+// === СКРОЛЛ: ПРОСТОЙ И НАДЁЖНЫЙ ===
 const galleryEl = document.getElementById('gallery');
-let isGalleryDrag = false;
-let dragStartY = 0;
-let dragScrollStart = 0;
-let dragMoved = false;
-let wheelSnapTimeout = null;
 
-// Включаем снап по умолчанию
-function enableSnap() {
-    if (galleryEl.classList.contains('date-mode')) {
-        galleryEl.style.scrollSnapType = 'y mandatory';
-    }
-}
-
-// Отключаем снап для свободного драга
-function disableSnap() {
-    galleryEl.style.scrollSnapType = 'none';
-}
+// --- DRAG МЫШКОЙ (листает галерею) ---
+let isDragging = false;
+let startY = 0;
+let startScroll = 0;
 
 galleryEl.addEventListener('mousedown', (e) => {
-    // Игнорируем, если клик по кнопкам или лайтбоксу
-    if (e.target.closest('.delete-btn, .edit-meta-btn, .lightbox, .add-btn')) return;
-    if (!galleryEl.classList.contains('date-mode')) return;
+    // НЕ начинаем драг, если клик по:
+    // - изображению (открытие лайтбокса)
+    // - кнопкам админа
+    // - лайтбоксу или другим элементам
+    if (e.target.closest('img, .delete-btn, .edit-meta-btn, .lightbox, .add-btn')) {
+        return;
+    }
     
-    isGalleryDrag = true;
-    dragMoved = false;
-    dragStartY = e.pageY;
-    dragScrollStart = galleryEl.scrollTop;
+    isDragging = true;
+    startY = e.clientY;
+    startScroll = galleryEl.scrollTop;
     galleryEl.style.cursor = 'grabbing';
 });
 
 window.addEventListener('mousemove', (e) => {
-    if (!isGalleryDrag) return;
+    if (!isDragging) return;
     
-    if (Math.abs(e.pageY - dragStartY) > 10) dragMoved = true;
-    
-    if (dragMoved) {
-        e.preventDefault();
-        galleryEl.scrollTop = dragScrollStart - (e.pageY - dragStartY);
-    }
+    const deltaY = e.clientY - startY;
+    galleryEl.scrollTop = startScroll - deltaY;
 });
 
 window.addEventListener('mouseup', () => {
-    if (!isGalleryDrag) return;
-    isGalleryDrag = false;
-    galleryEl.style.cursor = '';
-});
-
-// ПЕРЕХВАТ КЛИКА: если был драг — блокируем открытие фото
-galleryEl.addEventListener('click', (e) => {
-    if (dragMoved) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        dragMoved = false;
-    }
-}, true);
-
-
-galleryEl.addEventListener('mouseleave', () => {
-    if (isGalleryDrag) {
-        isGalleryDrag = false;
-        dragMoved = false;
+    if (isDragging) {
+        isDragging = false;
         galleryEl.style.cursor = '';
     }
 });
 
-// === КОЛЁСИКО: СНАП ПО ГОДАМ ===
+galleryEl.addEventListener('mouseleave', () => {
+    isDragging = false;
+    galleryEl.style.cursor = '';
+});
+
+// --- КОЛЁСИКО (снап по годам) ---
 galleryEl.addEventListener('wheel', (e) => {
-    // Если идёт драг — игнорируем колесо
-    if (isGalleryDrag) return;
-    
-    // Если снап уже активен — ничего не делаем (браузер сам проснапит)
-    // Если снап отключён (после драга) — включаем его обратно
-    if (galleryEl.style.scrollSnapType !== 'y mandatory') {
-        enableSnap();
-    }
-    
-    // Дебаунс: если колесо крутят быстро, не дёргаем снап лишний раз
-    clearTimeout(wheelSnapTimeout);
-    wheelSnapTimeout = setTimeout(() => {
-        // После окончания прокрутки убеждаемся, что снап включён
-        enableSnap();
-    }, 150);
+    // Снап всегда включён через CSS scroll-snap-type
+    // Браузер сам проснапит к ближайшему .year-section
 }, { passive: true });
