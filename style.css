@@ -544,32 +544,27 @@ body {
 
 .year-section {
     height: auto;
-    min-height: 100vh;
+    min-height: 80vh;
     width: 100%;
     scroll-snap-align: start;
-    padding: 0;
+    padding: auto;
     box-sizing: border-box;
 }
 
 /* === ЗАГОЛОВОК === */
 .year-section .year-header {
-    margin: 0 !important;
-    padding: 0 !important;
-    margin-bottom: 1vh !important;
-    width: 100%;
-    height: 20vh;
-    display: flex !important;
-    align-items: center;
+    top:0;
+    left: 0;
+    width: 60vw;
+    display: block;
     justify-content: center;
-    font-size: 18vh !important;
-    font-weight: 200;
-    line-height: 1;
-    text-align: center;
+    font-size: 20vh;
 }
 
 /* === МОЗАИКА (по умолчанию 2 колонки) === */
 .mosaic-grid {
-    column-count: 2;
+    column-rule:azure;
+    column-count: 3;
     column-gap: 0;
     width: 100%;
     line-height: 0;
@@ -591,10 +586,10 @@ body {
     column-count: 1;
 }
 .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card {
-    max-height: 40vh; /* Ограничение высоты */
+    max-height: 50vh; /* Ограничение высоты */
 }
 .mosaic-grid:has(.photo-card:nth-child(2):last-child) .photo-card img {
-    max-height: 40vh;
+    max-height: 50vh;
 }
 
 /* Карточки */
