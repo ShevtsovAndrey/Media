@@ -195,6 +195,9 @@ body {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     user-select: none;
+    pointer-events: none;
+    -webkit-user-drag: none;  /* Safari/Chrome */
+    -webkit-touch-callout: none; /* iOS: убирает меню при долгом тапе на img */
 }
 
 .photo-card:hover .delete-overlay,
