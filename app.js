@@ -401,7 +401,6 @@ async function renderSortedGallery(photosSource) {
     
     if (photos.length === 0) { 
         gallery.innerHTML = '<div class="loading">Нет фото</div>';
-        // Восстанавливаем футер, если он был
         if (existingFooter) gallery.appendChild(existingFooter);
         return; 
     }
@@ -489,7 +488,6 @@ async function renderSortedGallery(photosSource) {
             stagger: 0
         });
         
-        // Пересчитываем после загрузки изображений
         const images = grid.querySelectorAll('img');
         let loadedCount = 0;
         
@@ -523,13 +521,18 @@ async function renderSortedGallery(photosSource) {
         }, 2000);
     });
     
-    // === 2. ВОССТАНАВЛИВАЕМ ФУТЕР В КОНЕЦ, ЕСЛИ ОН БЫЛ УДАЛЁН ===
+    // === ВОССТАНАВЛИВАЕМ ФУТЕР В КОНЕЦ ===
     if (existingFooter) {
-    gallery.appendChild(existingFooter);
-}
-requestAnimationFrame(() => {
+        gallery.appendChild(existingFooter);
+    }
+    
+    // === СБРОС СКРОЛЛА В НАЧАЛО ===
+    requestAnimationFrame(() => {
         if (gallery) gallery.scrollTop = 0;
     });
+    
+    // === ЗАПУСКАЕМ НАВИГАЦИЮ ПО ГОДАМ (индексы + клавиатура) ===
+    setupYearNavigation();
 }
 
 
@@ -684,6 +687,81 @@ galleryEl.addEventListener('wheel', e => {
     if (galleryEl.style.scrollSnapType !== 'y mandatory') enableSnap();
     clearTimeout(wheelSnapTimeout); wheelSnapTimeout = setTimeout(enableSnap, 150);
 }, { passive: true });
+
+
+// === НАВИГАЦИЯ ПО ГОДАМ: ИНДЕКСЫ + КЛАВИАТУРА + FUTURE API ===
+let currentYearIndex = 1;
+let totalYears = 0;
+
+function setupYearNavigation() {
+    const gallery = document.getElementById('gallery');
+    const sections = gallery.querySelectorAll('.year-section');
+    totalYears = sections.length;
+
+    // === ОПРЕДЕЛЯЕМ МОБИЛЬНОЕ УСТРОЙСТВО ===
+    // Это нужно вычислить ДО создания наблюдателя
+    const isMobile = window.innerWidth <= 768;
+    const threshold = isMobile ? 0.3 : 0.5; // На мобильных порог ниже (0.3), чтобы срабатывало при быстром свайпе
+
+    // Присваиваем индексы (1 = самый новый)
+    sections.forEach((sec, i) => {
+        sec.dataset.yearIndex = i + 1;
+        const yearText = sec.querySelector('.year-header')?.textContent.trim();
+        if (yearText) sec.dataset.year = yearText;
+    });
+
+    // Отслеживаем текущий год при скролле
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            // Используем динамический порог
+            if (entry.isIntersecting && entry.intersectionRatio >= threshold) {
+                const idx = parseInt(entry.target.dataset.yearIndex);
+                if (!isNaN(idx)) currentYearIndex = idx;
+            }
+        });
+    }, { root: gallery, threshold: threshold }); // <-- Передаём переменную threshold сюда
+
+    sections.forEach(sec => observer.observe(sec));
+
+    // Клавиатурное управление
+    document.addEventListener('keydown', (e) => {
+        if (!gallery.classList.contains('date-mode')) return;
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+        let target = currentYearIndex;
+        if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+            target = Math.max(1, currentYearIndex - 1);
+        } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+            target = Math.min(totalYears, currentYearIndex + 1);
+        } else return;
+
+        if (target !== currentYearIndex) {
+            e.preventDefault();
+            scrollToYear(target);
+        }
+    });
+}
+
+function scrollToYear(index) {
+    const gallery = document.getElementById('gallery');
+    const target = gallery.querySelector(`.year-section[data-year-index="${index}"]`);
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        currentYearIndex = index;
+    }
+}
+
+// API для будущих кнопок
+window.navigateToYear = function(year) {
+    const gallery = document.getElementById('gallery');
+    const target = gallery.querySelector(`.year-section[data-year="${year}"]`) || 
+                   gallery.querySelector(`.year-section[data-year-index="${year}"]`);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+
+
+
 
 // === СТАРТ ===
 loadGallery();

@@ -493,6 +493,7 @@ body {
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
+     touch-action: pan-y; /* Разрешает только вертикальный скролл, улучшает снап */
     
     /* Визуальный отступ, чтобы контент не прятался под хедером */
     padding-top: var(--header-height);
@@ -626,4 +627,37 @@ body {
     position: relative;
     z-index: 2;
     box-sizing: border-box;
+}
+
+.gallery-footer {
+    scroll-snap-align: none !important;
+    scroll-snap-stop: normal !important;
+}
+
+
+/* === МОБИЛЬНЫЕ: ФИКС СНЕППИНГА === */
+@media (max-width: 768px) {
+    #gallery.date-mode {
+        /* mandatory на мобильных даёт чёткий снап без "проскальзываний" */
+        scroll-snap-type: y mandatory !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .year-section {
+        /* на мобильных — жёсткая привязка к началу секции */
+        scroll-snap-align: start !important;
+        scroll-snap-stop: always !important; /* не даёт "проскочить" год */
+    }
+    
+    .gallery-footer {
+        /* футер всё ещё не снапится */
+        scroll-snap-align: none !important;
+        scroll-snap-stop: normal !important;
+    }
+    
+    /* Увеличиваем буфер под футер на мобильных */
+    .year-section:last-child {
+        scroll-margin-bottom: 20vh !important;
+        margin-bottom: 20vh !important;
+    }
 }
