@@ -2,7 +2,7 @@
     --bg: #010101; 
     --text: #010101;
     --br: 50%;
-    --header-height: 10vh;
+    --header-height: 8vh;
     --galleryindex: 2;
     --heroindex: 20;
 }
@@ -282,11 +282,11 @@ body {
     right: 2vw;
     width: 48px; 
     height: 48px;
-    background: var(--bgoverlay);
+    background: hsl(0deg 0% 0% / 20%);
     backdrop-filter: blur(6px); 
     -webkit-backdrop-filter: blur(6px);
-    border: 0px solid rgb(255 255 255 / 10%);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+    border: 1px solid rgb(255 255 255 / 10%);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 20%);
     border-radius: var(--br); 
     color: #fff;
     font-size: 24px; 
@@ -315,10 +315,13 @@ body {
     transition: opacity 0.2s ease;
 }
 
-.lightbox.active { background: var(--bgoverlay); opacity: 1; pointer-events: auto; }
+.lightbox.active { 
+    background: var(--bgoverlay); 
+    opacity: 1; 
+    pointer-events: auto; }
 
 .lightbox img {
-    max-width: 90vw; max-height: 90vh; object-fit: contain;
+    max-width: 100vw; max-height: 100vh; object-fit: contain;
     box-shadow: none; border: 6px; user-select: none;
     z-index: 100; border-radius: 2px;
 }
@@ -330,18 +333,32 @@ body {
 
 /* Drag & Drop */
 .drag-overlay {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.15); backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 100; opacity: 0; pointer-events: none;
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh;
+    background: rgba(0,0,0,0.2); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    z-index: 100; 
+    opacity: 0; 
+    pointer-events: none;
     transition: opacity 0.25s ease;
-    color: #fff; font-size: 22px; font-weight: 500;
-    letter-spacing: 0.5px; text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    color: #fff; 
+    font-size: 24px; 
+    font-weight: 500;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.8);
     user-select: none;
 }
 
-.drag-overlay.active { opacity: 1; pointer-events: auto; }
+.drag-overlay.active { 
+    opacity: 1; 
+    pointer-events: auto; 
+}
 
 /* Заголовки годов */
 .year-header {
@@ -427,10 +444,13 @@ body {
     left: 0;
     width: 100%;
     height: var(--header-height); /* ← Используем переменную */
-    background: var(--bg);
-    z-index: 1000;
+    background: hsl(0deg 0% 0% / 80%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px); 
+    z-index: 50;
     display: none;
     pointer-events: none;
+    border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 #app-header.visible {

@@ -118,7 +118,13 @@ async function uploadFiles(files) {
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
     setHeroStatus('loading');
-    gallery.innerHTML = '';
+    
+    // === 1. СОХРАНЯЕМ ФУТЕР ПЕРЕД ОЧИСТКОЙ ===
+    const existingFooter = gallery.querySelector('.gallery-footer');
+    
+    // Очищаем ТОЛЬКО динамический контент (года, лоадеры, сетки), не трогаем футер
+    const dynamicContent = gallery.querySelectorAll('.year-section, .loading, .mosaic-grid');
+    dynamicContent.forEach(el => el.remove());
     
     try {
         let githubPhotos = [];
@@ -157,9 +163,21 @@ async function loadGallery() {
         window.galleryPhotos = galleryPhotos;
         setHeroStatus('sorting');
         await renderSortedGallery(galleryPhotos);
+        
+        // === 2. ВОССТАНАВЛИВАЕМ ФУТЕР В КОНЕЦ, ЕСЛИ ОН БЫЛ УДАЛЁН ===
+        if (existingFooter && !gallery.contains(existingFooter)) {
+            gallery.appendChild(existingFooter);
+        }
+        
         markEverythingReady();
     } catch (err) {
         console.error('❌ Ошибка загрузки:', err);
+        
+        // === 3. ВОССТАНАВЛИВАЕМ ФУТЕР ДАЖЕ ПРИ ОШИБКЕ ===
+        if (existingFooter && !gallery.contains(existingFooter)) {
+            gallery.appendChild(existingFooter);
+        }
+        
         markEverythingReady();
     }
 }
