@@ -6,36 +6,60 @@
     <title>Shevtsov Media</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
-<!-- Заглавный блок (фиксированный, может быть до body) -->
-<!-- Заглавный блок -->
-<div id="hero-section">
-    <div class="hero-content">
-        <img src="icons/logo.png" alt="Logo" class="hero-logo" draggable="false">
-<img src="icons/bigloader.png" id="bigLoader" alt="" draggable="false">
-    </div>
-    
-    <!-- Статус теперь в потоке под лоадером -->
-    <div class="hero-status" id="heroStatus">
-        <span id="statusText">Загрузка</span>
-    </div>
-    
-    <!-- Стрелка тоже в потоке -->
-    <div class="hero-arrow" id="heroArrow">
-        <img src="icons/arrowdown.png" alt="Scroll" draggable="false">
-    </div>
-</div>
     
 <body>
+
+    <!-- 1. Приветственный экран (уезжает при свайпе) -->
+    <div id="hero-section">
+        <div class="hero-content">
+            <img src="icons/logo.png" alt="Logo" class="hero-logo" draggable="false">
+            <img src="icons/bigloader.png" id="bigLoader" alt="" draggable="false">
+        </div>
+        <div class="hero-status" id="heroStatus">
+            <span id="statusText"></span>
+        </div>
+        <div class="hero-arrow" id="heroArrow">
+            <img src="icons/arrowdown.png" alt="Scroll" draggable="false">
+        </div>
+    </div>
+
+    <!-- 2. Хедер (фиксированный поверх, появляется при скролле к верху) -->
+    <div id="app-header"> 
+        <div class="header-content">Хедер</div>
+    </div>
+
+    <!-- 3. Оверлей для Drag&Drop (поверх всего) -->
     <div id="dragOverlay" class="drag-overlay">Drop photo and load it</div>
-    <main id="gallery" class="gallery"></main>
+    
+    <!-- 4. ЕДИНЫЙ СКРОЛЛИРУЕМЫЙ КОНТЕЙНЕР: галерея + футер -->
+    <main id="gallery" class="gallery">
+        <!-- Сюда через JS рендерятся года с фото -->
+        
+        <!-- Футер ВНУТРИ галереи = скроллится вместе с фото, не создаёт второй скролл -->
+        <footer class="gallery-footer">
+            <div class="footer-content">
+                <p>&copy; 2026 Shevtsov Media. Все права защищены.</p>
+                <address>
+                    <p>Email: <a href="mailto:info@example.com">info@example.com</a></p>
+                    <p>Телефон: +7 (999) 000-00-00</p>
+                </address>
+                <nav>
+                    <a href="/privacy">Политика конфиденциальности</a>
+                    <a href="/about">О нас</a>
+                </nav>
+            </div>
+        </footer>
+    </main>
+    
+    <!-- Кнопки управления (фиксированные, не в скролле) -->
     <button id="addBtn" class="add-btn" style="display: none;">+</button>
     <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
 
-    <!-- Скрипты ВНУТРИ body -->
+    <!-- Скрипты в конце body -->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1479.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.min.js"></script>
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
     <script src="app.js"></script>
+
 </body>
 </html>

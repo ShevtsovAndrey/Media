@@ -368,12 +368,25 @@ function computeVisualScore(hue, saturation, lightness) {
 // === СОРТИРОВКА + РЕНДЕРИНГ + MASONRY ===
 async function renderSortedGallery(photosSource) {
     const gallery = document.getElementById('gallery');
-    gallery.innerHTML = '';
+    
+    // === СОХРАНЯЕМ ФУТЕР ПЕРЕД ОЧИСТКОЙ ===
+    const existingFooter = gallery.querySelector('.gallery-footer');
+    
+    // Очищаем ТОЛЬКО динамический контент (года, лоадеры), не трогаем футер
+    const dynamicContent = gallery.querySelectorAll('.year-section, .loading, .mosaic-grid');
+    dynamicContent.forEach(el => el.remove());
+    
     await new Promise(r => setTimeout(r, 30));
     
     let photos = Array.isArray(photosSource) ? [...photosSource] : [];
     photos = photos.filter(p => p.key && p.key !== 'undefined' && p.key.trim() !== '' && p.key !== 'null');
-    if (photos.length === 0) { gallery.innerHTML = '<div class="loading">Нет фото</div>'; return; }
+    
+    if (photos.length === 0) { 
+        gallery.innerHTML = '<div class="loading">Нет фото</div>';
+        // Восстанавливаем футер, если он был
+        if (existingFooter) gallery.appendChild(existingFooter);
+        return; 
+    }
     
     console.log('🎨 Анализирую', photos.length, 'фото...');
     const photosWithAnalysis = await Promise.all(photos.map(async p => {
@@ -386,17 +399,27 @@ async function renderSortedGallery(photosSource) {
     photosWithAnalysis.forEach(p => {
         const y = p.tagYear; let isValid = false;
         if (typeof y === 'number' && !isNaN(y) && y >= 1999 && y <= 2100) isValid = true;
-        else if (typeof y === 'string') { const num = parseInt(y.trim(), 10); if (!isNaN(num) && num >= 1999 && num <= 2100) { isValid = true; p.tagYear = num; } }
-        if (isValid) { const year = String(p.tagYear); if (!groups[year]) groups[year] = []; groups[year].push(p); }
+        else if (typeof y === 'string') { 
+            const num = parseInt(y.trim(), 10); 
+            if (!isNaN(num) && num >= 1999 && num <= 2100) { 
+                isValid = true; 
+                p.tagYear = num; 
+            } 
+        }
+        if (isValid) { 
+            const year = String(p.tagYear); 
+            if (!groups[year]) groups[year] = []; 
+            groups[year].push(p); 
+        }
         else unknown.push(p);
     });
     
-    // === НОВАЯ СОРТИРОВКА: по визуальному скору (светлые/насыщенные → тёмные/блёклые) ===
+    // === СОРТИРОВКА: по визуальному скору ===
     Object.keys(groups).forEach(year => {
         groups[year].sort((a, b) => {
             const scoreA = computeVisualScore(a.analysis.hue, a.analysis.saturation, a.analysis.lightness);
             const scoreB = computeVisualScore(b.analysis.hue, b.analysis.saturation, b.analysis.lightness);
-            return scoreA - scoreB; // По возрастанию: 0 (светлое/насыщенное) → 100 (тёмное/блёклое)
+            return scoreA - scoreB;
         });
     });
     
@@ -405,76 +428,87 @@ async function renderSortedGallery(photosSource) {
     const sortedYears = Object.keys(groups).sort((a, b) => parseInt(b) - parseInt(a));
     
     sortedYears.forEach(year => {
-        const section = document.createElement('div'); section.className = 'year-section';
-        const header = document.createElement('div'); header.className = 'year-header'; header.textContent = year;
+        const section = document.createElement('div'); 
+        section.className = 'year-section';
+        const header = document.createElement('div'); 
+        header.className = 'year-header'; 
+        header.textContent = year;
         section.appendChild(header);
-        const grid = document.createElement('div'); grid.className = 'mosaic-grid';
+        const grid = document.createElement('div'); 
+        grid.className = 'mosaic-grid';
         groups[year].forEach(photo => renderCard(photo, -1, false, grid));
-        section.appendChild(grid); gallery.appendChild(section);
+        section.appendChild(grid); 
+        gallery.appendChild(section);
     });
     
     if (unknown.length > 0) {
-        const section = document.createElement('div'); section.className = 'year-section';
-        const header = document.createElement('div'); header.className = 'year-header'; header.textContent = '-';
+        const section = document.createElement('div'); 
+        section.className = 'year-section';
+        const header = document.createElement('div'); 
+        header.className = 'year-header'; 
+        header.textContent = '-';
         section.appendChild(header);
-        const grid = document.createElement('div'); grid.className = 'mosaic-grid';
+        const grid = document.createElement('div'); 
+        grid.className = 'mosaic-grid';
         unknown.forEach(photo => renderCard(photo, -1, true, grid));
-        section.appendChild(grid); gallery.appendChild(section);
+        section.appendChild(grid); 
+        gallery.appendChild(section);
     }
     
     console.log('✅ Сортировка завершена');
     
-   // === ИНИЦИАЛИЗАЦИЯ MASONRY (ПЛОТНАЯ УПАКОВКА) ===
-const grids = document.querySelectorAll('.mosaic-grid');
-grids.forEach(grid => {
-    // Уничтожаем старый инстанс, если есть
-    if (grid.masonry) grid.masonry.destroy();
-    
-    // Создаём новый
-    grid.masonry = new Masonry(grid, {
-        itemSelector: '.photo-card',
-        columnWidth: '.photo-card',
-        percentPosition: true,
-        horizontalOrder: true,
-        transitionDuration: 0,
-        stagger: 0
-    });
-    
-    // === ИСПРАВЛЕНИЕ: Пересчитываем после загрузки всех изображений ===
-    const images = grid.querySelectorAll('img');
-    let loadedCount = 0;
-    
-    images.forEach(img => {
-        if (img.complete) {
-            loadedCount++;
-        } else {
-            img.addEventListener('load', () => {
+    // === ИНИЦИАЛИЗАЦИЯ MASONRY ===
+    const grids = document.querySelectorAll('.mosaic-grid');
+    grids.forEach(grid => {
+        if (grid.masonry) grid.masonry.destroy();
+        
+        grid.masonry = new Masonry(grid, {
+            itemSelector: '.photo-card',
+            columnWidth: '.photo-card',
+            percentPosition: true,
+            horizontalOrder: true,
+            transitionDuration: 0,
+            stagger: 0
+        });
+        
+        // Пересчитываем после загрузки изображений
+        const images = grid.querySelectorAll('img');
+        let loadedCount = 0;
+        
+        images.forEach(img => {
+            if (img.complete) {
                 loadedCount++;
-                if (loadedCount === images.length) {
-                    grid.masonry.layout();
-                }
-            });
-            img.addEventListener('error', () => {
-                loadedCount++;
-                if (loadedCount === images.length) {
-                    grid.masonry.layout();
-                }
-            });
+            } else {
+                img.addEventListener('load', () => {
+                    loadedCount++;
+                    if (loadedCount === images.length) {
+                        grid.masonry.layout();
+                    }
+                });
+                img.addEventListener('error', () => {
+                    loadedCount++;
+                    if (loadedCount === images.length) {
+                        grid.masonry.layout();
+                    }
+                });
+            }
+        });
+        
+        if (loadedCount === images.length && images.length > 0) {
+            setTimeout(() => grid.masonry.layout(), 100);
         }
+        
+        setTimeout(() => {
+            if (loadedCount < images.length) {
+                grid.masonry.layout();
+            }
+        }, 2000);
     });
     
-    // Если все картинки уже загружены (кэш)
-    if (loadedCount === images.length && images.length > 0) {
-        setTimeout(() => grid.masonry.layout(), 100);
+    // === 2. ВОССТАНАВЛИВАЕМ ФУТЕР В КОНЕЦ, ЕСЛИ ОН БЫЛ УДАЛЁН ===
+    if (existingFooter && !gallery.contains(existingFooter)) {
+        gallery.appendChild(existingFooter);
     }
-    
-    // Фолбэк: если картинки не загружаются
-    setTimeout(() => {
-        if (loadedCount < images.length) {
-            grid.masonry.layout();
-        }
-    }, 2000);
-});
 }
 
 
@@ -516,7 +550,42 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('touchend', () => { if (!isDragging || heroDismissed || !isEverythingReady) return; isDragging = false; heroSection.classList.remove('dragging'); if (currentY - startY < -window.innerHeight * 0.4) dismissHero(); else heroSection.style.transform = 'translateY(0)'; currentY = 0; startY = 0; }, { passive: true });
     }
 });
-function dismissHero() { if (!heroSection || heroDismissed) return; heroDismissed = true; heroSection.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'; heroSection.style.transform = 'translateY(-100%)'; setTimeout(() => { heroSection.classList.add('hidden'); heroSection.style.display = 'none'; document.body.style.overflow = ''; }, 400); }
+
+
+// СКРЫТИЕ НАХУЙ ХЕДЕРА
+function dismissHero() {
+    if (!heroSection || heroDismissed) return;
+    heroDismissed = true;
+
+    const appHeader = document.getElementById('app-header');
+    
+    // 1. Приклеиваем hero к низу (сдвиг на -90vh)
+    heroSection.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+    heroSection.style.transform = 'translateY(-90vh)';
+    
+    // 2. Ждём 0.4с, пока "прилипнет"
+    setTimeout(() => {
+        // 3. Запускаем выцветание hero
+        heroSection.style.transition = 'opacity 0.6s ease';
+        heroSection.style.opacity = '0';
+        
+        // 4. ТОЛЬКО ТЕПЕРЬ проявляем хедер (синхронно с выцветанием)
+        if (appHeader) {
+            appHeader.style.display = 'block';
+            void appHeader.offsetWidth; // reflow для плавности
+            appHeader.classList.add('visible'); // ← КЛЮЧЕВОЕ: появляется только здесь
+        }
+    }, 400);
+    
+    // 5. Удаляем hero после анимации
+    setTimeout(() => {
+        if (heroSection && heroSection.parentNode) heroSection.remove();
+        document.body.style.overflow = '';
+        window.dispatchEvent(new Event('resize'));
+    }, 1000);
+}
+
+
 function markEverythingReady() {
     isEverythingReady = true;
     setHeroStatus('ready');
@@ -554,6 +623,23 @@ galleryEl.addEventListener('wheel', e => {
     if (isGalleryDrag) return;
     if (galleryEl.style.scrollSnapType !== 'y mandatory') enableSnap();
     clearTimeout(wheelSnapTimeout); wheelSnapTimeout = setTimeout(enableSnap, 150);
+}, { passive: true });
+
+// === ПОКАЗ ХЕДЕРА ПРИ СКРОЛЛЕ ВВЕРХ ===
+let lastScrollY = 0;
+const header = document.getElementById('app-header');
+
+galleryEl.addEventListener('scroll', () => {
+    const currentY = galleryEl.scrollTop;
+    
+    // Показываем хедер, если доскроллили до самого верха (менее 50px)
+    if (currentY < 50) {
+        if (header && !header.classList.contains('visible')) {
+            header.classList.add('visible');
+        }
+    }
+    
+    lastScrollY = currentY;
 }, { passive: true });
 
 // === СТАРТ ===
