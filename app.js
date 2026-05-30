@@ -165,18 +165,18 @@ async function loadGallery() {
         await renderSortedGallery(galleryPhotos);
         
         // === 2. ВОССТАНАВЛИВАЕМ ФУТЕР В КОНЕЦ, ЕСЛИ ОН БЫЛ УДАЛЁН ===
-        if (existingFooter && !gallery.contains(existingFooter)) {
-            gallery.appendChild(existingFooter);
-        }
+        if (existingFooter) {
+    gallery.appendChild(existingFooter);
+}
         
         markEverythingReady();
     } catch (err) {
         console.error('❌ Ошибка загрузки:', err);
         
         // === 3. ВОССТАНАВЛИВАЕМ ФУТЕР ДАЖЕ ПРИ ОШИБКЕ ===
-        if (existingFooter && !gallery.contains(existingFooter)) {
-            gallery.appendChild(existingFooter);
-        }
+        if (existingFooter) {
+    gallery.appendChild(existingFooter);
+}
         
         markEverythingReady();
     }
@@ -524,9 +524,9 @@ async function renderSortedGallery(photosSource) {
     });
     
     // === 2. ВОССТАНАВЛИВАЕМ ФУТЕР В КОНЕЦ, ЕСЛИ ОН БЫЛ УДАЛЁН ===
-    if (existingFooter && !gallery.contains(existingFooter)) {
-        gallery.appendChild(existingFooter);
-    }
+    if (existingFooter) {
+    gallery.appendChild(existingFooter);
+}
 }
 
 

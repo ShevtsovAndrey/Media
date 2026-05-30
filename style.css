@@ -172,6 +172,14 @@
 }
 
 
+#hero-section.stuck {
+    /* Сдвигаем вверх на (100vh - высота хедера) */
+    transform: translateY(calc(-100vh + var(--header-height))) !important;
+    /* Убираем transition, чтобы не было дёрганий при смене класса */
+    transition: none !important;
+}
+
+
 body {
     background: var(--bg);
     font-family: system-ui, -apple-system, sans-serif;
@@ -511,38 +519,70 @@ body {
 
 /* === ФУТЕР: СТИЛИ === */
 .gallery-footer {
+    clear: both; /* ← КРИТИЧНО: футер встанет ПОСЛЕ float-карточек */
     width: 100%;
-    padding: 6vh;
+    padding: 6vh 4vw;
     background: var(--bg);
-    color: var(--text);
+    color: #ffffff; /* ← ЯВНЫЙ БЕЛЫЙ ЦВЕТ (не var(--text), который чёрный!) */
     text-align: center;
     font-size: 14px;
-    opacity: 0.8;
+    opacity: 0.9; /* Чуть ярче, чем 0.8 */
     scroll-snap-align: none !important;
+    scroll-snap-stop: normal !important;
     margin-top: 8vh;
+    position: relative;
+    z-index: 2;
+    box-sizing: border-box;
+}
+
+/* Контент футера */
+.gallery-footer .footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.gallery-footer p {
+    margin: 0;
+    line-height: 1.4;
+    color: #ffffff; /* ← Также явно белый */
+}
+
+.gallery-footer nav {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .gallery-footer a {
-    color: var(--accent);
+    color: var(--accent); /* #00ffe7 — уже яркий */
     text-decoration: none;
-    margin: 0 8px;
+    margin: 0;
     display: inline-block;
-    margin: 8px 4px;
+    font-size: 13px;
+    opacity: 0.95;
+    transition: opacity 0.2s;
 }
 
 .gallery-footer a:hover {
     text-decoration: underline;
+    opacity: 1;
 }
 
-.header-content{
-    color:var(--text);
-    top:50%;
-    left:50%
+.gallery-footer {
+    outline: 2px solid rgb(255 255 255 / 20%) !important; /* ← Убери после проверки */
 }
 
-#hero-section.stuck {
-    /* Сдвигаем вверх на (100vh - высота хедера) */
-    transform: translateY(calc(-100vh + var(--header-height))) !important;
-    /* Убираем transition, чтобы не было дёрганий при смене класса */
-    transition: none !important;
+.year-section:last-child {
+    /* Добавляем "буфер" после последнего года, чтобы футер не прилипал */
+    scroll-margin-bottom: 10vh;
+    margin-bottom: 10vh;
+}
+/* Для надёжности: если футер — последний элемент, он тоже имеет отступ */
+#gallery.date-mode > :last-child {
+    scroll-margin-bottom: 5vh;
 }
