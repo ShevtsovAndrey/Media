@@ -427,7 +427,7 @@ body {
     left: 0;
     width: 100%;
     height: var(--header-height); /* ← Используем переменную */
-    background: #ffffff;
+    background: var(--bg);
     z-index: 1000;
     display: none;
     pointer-events: none;
@@ -439,17 +439,20 @@ body {
 
 /* Логотип в хедере (кликабельный) */
 #app-header .header-logo {
-    pointer-events: auto; /* Включаем клики только для лого */
     height: 100%;
     display: flex;
     align-items: center;
-    padding: 0 4vw;
+    padding: 0 2vw;
+    pointer-events: auto;
 }
 
 #app-header .header-logo img {
-    height: auto;
-    width: auto;
-    filter: invert(0);
+    height: 40%; 
+    max-width: 40vw;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    filter: invert(1);
 }
 
 /* === ГАЛЕРЕЯ: ОТСТУП ПОД ХЕДЕР === */
@@ -460,13 +463,29 @@ body {
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    padding-top: var(--header-height); /* ← Отступ = высоте хедера */
+    
+    /* Визуальный отступ, чтобы контент не прятался под хедером */
+    padding-top: var(--header-height);
+    
+    /* Отступ для скролл-снапа, чтобы года не прилипали под хедер */
+    scroll-padding-top: var(--header-height);
+    
     display: block !important;
-    scroll-padding: 0;
     box-sizing: border-box;
     position: relative;
-    z-index: 1;
+    z-index: var(--galleryindex);
 }
+
+/* Гарантируем, что первый год тоже имеет отступ */
+#gallery.date-mode .year-section:first-child {
+    margin-top: 0;
+    padding-top: 2vh; /* Небольшой доп. отступ для красоты */
+}
+
+
+
+
+
 
 /* === ФУТЕР: СТИЛИ === */
 .gallery-footer {

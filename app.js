@@ -85,7 +85,7 @@ if (isAdmin) document.getElementById('addBtn').style.display = 'flex';
 async function uploadFiles(files) {
     if (!files?.length) return;
     const btn = document.getElementById('addBtn');
-    if (btn) { btn.innerHTML = '<img src="loader.png" class="loading-icon">'; btn.disabled = true; }
+    if (btn) { btn.innerHTML = '<img src="/icons/loader.png" class="loading-icon">'; btn.disabled = true; }
     
     for (const file of files) {
         try {
