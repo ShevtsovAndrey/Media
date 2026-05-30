@@ -519,6 +519,44 @@ window.addEventListener('resize', () => {
     });
 });
 
+
+
+
+
+
+
+
+// Кнопка "+"
+const addBtn = document.getElementById('addBtn');
+const fileInput = document.getElementById('fileInput');
+
+if (addBtn && fileInput) {
+    // Показываем кнопку, если админ (дублируем проверку на всякий случай)
+    if (isAdmin) {
+        addBtn.style.display = 'flex';
+    }
+    
+    // Клик по "+" → открываем выбор файлов
+    addBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fileInput.click();
+    });
+    
+    // Выбор файлов → загрузка
+    fileInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+        
+        await uploadFiles(files);
+        
+        // Сбрасываем value, чтобы можно было выбрать тот же файл снова
+        e.target.value = '';
+    });
+}
+
+
+
 // === DRAG & DROP ===
 window.addEventListener('load', () => {
     const dragOverlay = document.getElementById('dragOverlay');
