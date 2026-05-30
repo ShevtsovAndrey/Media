@@ -711,17 +711,23 @@ function setupYearNavigation() {
     });
 
     // Отслеживаем текущий год при скролле
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            // Используем динамический порог
-            if (entry.isIntersecting && entry.intersectionRatio >= threshold) {
-                const idx = parseInt(entry.target.dataset.yearIndex);
-                if (!isNaN(idx)) currentYearIndex = idx;
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        const threshold = isMobile ? 0.3 : 0.5;
+        if (entry.isIntersecting && entry.intersectionRatio >= threshold) {
+            const idx = parseInt(entry.target.dataset.yearIndex);
+            if (!isNaN(idx)) {
+                currentYearIndex = idx;
             }
-        });
-    }, { root: gallery, threshold: threshold }); // <-- Передаём переменную threshold сюда
+            // Футер не имеет data-year-index, поэтому просто игнорируем его для currentYearIndex
+            // Если нужно, можно добавить: else if (entry.target.classList.contains('gallery-footer')) { ... }
+        }
+    });
+}, { root: gallery, threshold: isMobile ? 0.3 : 0.5 });
 
     sections.forEach(sec => observer.observe(sec));
+const footer = gallery.querySelector('.gallery-footer');
+if (footer) observer.observe(footer);
 
     // Клавиатурное управление
     document.addEventListener('keydown', (e) => {

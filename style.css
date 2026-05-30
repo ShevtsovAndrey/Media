@@ -545,8 +545,15 @@ body {
     text-align: center;
     font-size: 14px;
     opacity: 0.9;
-    scroll-snap-align: end; /* ← Разрешаем снап на футер, если нужно */
+    
+    /* === КЛЮЧЕВОЕ: футер ТЕПЕРЬ точка снапа === */
+    scroll-snap-align: start !important;
+    scroll-snap-stop: always !important;
+    
+    /* === Отступы, чтобы футер появлялся полностью и ниже хедера === */
+    scroll-margin-top: var(--header-height) !important;
     margin-top: 8vh;
+    
     position: relative;
     z-index: 2;
     box-sizing: border-box;
@@ -594,11 +601,6 @@ body {
     outline: 2px solid rgb(255 255 255 / 20%) !important; /* ← Убери после проверки */
 }
 
-.year-section:last-child {
-    /* Добавляем "буфер" после последнего года, чтобы футер не прилипал */
-    scroll-margin-bottom: 10vh;
-    margin-bottom: 10vh;
-}
 /* Для надёжности: если футер — последний элемент, он тоже имеет отступ */
 #gallery.date-mode > :last-child {
     scroll-margin-bottom: 5vh;
@@ -612,9 +614,7 @@ body {
     box-sizing: border-box;
 }
 
-/* Футер: НЕ является точкой снапа */
 .gallery-footer {
-    scroll-snap-align: none !important; /* ← Запрещаем снап на футер */
     clear: both;
     width: 100%;
     padding: 6vh 4vw;
@@ -623,15 +623,18 @@ body {
     text-align: center;
     font-size: 14px;
     opacity: 0.9;
+    
+    /* ✅ Футер — точка снапа */
+    scroll-snap-align: start !important;
+    scroll-snap-stop: always !important;
+    
+    /* ✅ Отступ под хедер при снапе */
+    scroll-margin-top: var(--header-height) !important;
     margin-top: 8vh;
+    
     position: relative;
     z-index: 2;
     box-sizing: border-box;
-}
-
-.gallery-footer {
-    scroll-snap-align: none !important;
-    scroll-snap-stop: normal !important;
 }
 
 
@@ -642,17 +645,18 @@ body {
         scroll-snap-type: y mandatory !important;
         -webkit-overflow-scrolling: touch;
     }
+
+    .gallery-footer {
+        /* Оставляем start и на мобильных */
+        scroll-snap-align: start !important;
+        scroll-snap-stop: always !important;
+        scroll-margin-top: var(--header-height) !important;
+    }
     
     .year-section {
         /* на мобильных — жёсткая привязка к началу секции */
         scroll-snap-align: start !important;
         scroll-snap-stop: always !important; /* не даёт "проскочить" год */
-    }
-    
-    .gallery-footer {
-        /* футер всё ещё не снапится */
-        scroll-snap-align: none !important;
-        scroll-snap-stop: normal !important;
     }
     
     /* Увеличиваем буфер под футер на мобильных */
