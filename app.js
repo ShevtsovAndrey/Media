@@ -527,6 +527,9 @@ async function renderSortedGallery(photosSource) {
     if (existingFooter) {
     gallery.appendChild(existingFooter);
 }
+requestAnimationFrame(() => {
+        if (gallery) gallery.scrollTop = 0;
+    });
 }
 
 
