@@ -85,7 +85,7 @@ if (isAdmin) document.getElementById('addBtn').style.display = 'flex';
 async function uploadFiles(files) {
     if (!files?.length) return;
     const btn = document.getElementById('addBtn');
-    if (btn) { btn.innerHTML = '<img src="/icons/loader.png" class="loading-icon">'; btn.disabled = true; }
+    if (btn) { btn.innerHTML = '<img src="icons/loader.png" class="loading-icon">'; btn.disabled = true; }
     
     for (const file of files) {
         try {
@@ -133,7 +133,7 @@ async function loadGallery() {
             const jsonRes = await fetch(jsonUrl);
             if (jsonRes.ok) {
                 const data = await jsonRes.json();
-                githubPhotos = JSON.parse(atob(data.content));
+                githubPhotos = JSON.parse(decodeURIComponent(escape(atob(data.content))));
             }
         } catch (e) { console.warn('⚠️ JSON не загружен'); }
         
@@ -277,7 +277,7 @@ async function syncJSON(changes, action, retries = 2) {
     
     const putRes = await fetch(url, {
         method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: action === 'add' ? 'Add' : 'Delete', content: btoa(JSON.stringify(current, null, 2)), branch: GITHUB_CONFIG.branch, sha })
+        body: JSON.stringify({ message: action === 'add' ? 'Add' : 'Delete', content: btoa(unescape(encodeURIComponent(JSON.stringify(current, null, 2)))), branch: GITHUB_CONFIG.branch, sha })
     });
     if (!putRes.ok) {
         const err = await putRes.json().catch(() => ({}));

@@ -98,7 +98,9 @@ async function updateGalleryJSON(token, imagePath, title, location) {
     
     if (getRes.ok) {
         const data = await getRes.json();
-        try { current = JSON.parse(atob(data.content)); } catch(e) { current = []; }
+        try { 
+    current = JSON.parse(decodeURIComponent(escape(atob(data.content)))); 
+} catch(e) { current = []; }
         sha = data.sha;
     }
 
@@ -107,6 +109,10 @@ async function updateGalleryJSON(token, imagePath, title, location) {
     await fetch(url, {
         method: 'PUT',
         headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `Update gallery`, content: btoa(JSON.stringify(current, null, 2)), branch: BRANCH, sha })
+        body: JSON.stringify({ 
+            message: `Update gallery`, 
+            content: btoa(unescape(encodeURIComponent(JSON.stringify(current, null, 2)))), 
+            branch: BRANCH, sha 
+        })
     });
 }
