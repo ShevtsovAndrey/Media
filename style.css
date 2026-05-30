@@ -518,17 +518,33 @@ body {
 
 
 /* === ФУТЕР: СТИЛИ === */
+
+#gallery.date-mode {
+    height: 100vh;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y proximity; /* ← БЫЛО: mandatory, СТАЛО: proximity */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding-top: var(--header-height);
+    scroll-padding-top: var(--header-height);
+    display: block !important;
+    box-sizing: border-box;
+    position: relative;
+    z-index: var(--galleryindex);
+}
+
+/* === ФУТЕР: ФИНАЛЬНЫЕ ПРАВКИ === */
 .gallery-footer {
-    clear: both; /* ← КРИТИЧНО: футер встанет ПОСЛЕ float-карточек */
+    clear: both;
     width: 100%;
     padding: 6vh 4vw;
     background: var(--bg);
-    color: #ffffff; /* ← ЯВНЫЙ БЕЛЫЙ ЦВЕТ (не var(--text), который чёрный!) */
+    color: #ffffff;
     text-align: center;
     font-size: 14px;
-    opacity: 0.9; /* Чуть ярче, чем 0.8 */
-    scroll-snap-align: none !important;
-    scroll-snap-stop: normal !important;
+    opacity: 0.9;
+    scroll-snap-align: end; /* ← Разрешаем снап на футер, если нужно */
     margin-top: 8vh;
     position: relative;
     z-index: 2;
