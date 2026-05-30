@@ -552,39 +552,39 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// СКРЫТИЕ НАХУЙ ХЕДЕРА
 function dismissHero() {
     if (!heroSection || heroDismissed) return;
     heroDismissed = true;
+    
+    // Убираем инлайн-transform, чтобы сработал класс .stuck
+    heroSection.style.transform = '';
+    heroSection.style.transition = '';
 
     const appHeader = document.getElementById('app-header');
     
-    // 1. Приклеиваем hero к низу (сдвиг на -90vh)
-    heroSection.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-    heroSection.style.transform = 'translateY(-90vh)';
+    // 1. Добавляем класс "прилип" — CSS сам сдвинет на нужную высоту
+    heroSection.classList.add('stuck');
     
-    // 2. Ждём 0.4с, пока "прилипнет"
+    // 2. Ждём 0.4с (время "прилипания"), затем запускаем выцветание
     setTimeout(() => {
-        // 3. Запускаем выцветание hero
         heroSection.style.transition = 'opacity 0.6s ease';
         heroSection.style.opacity = '0';
         
-        // 4. ТОЛЬКО ТЕПЕРЬ проявляем хедер (синхронно с выцветанием)
+        // 3. ТОЛЬКО ТЕПЕРЬ проявляем хедер
         if (appHeader) {
             appHeader.style.display = 'block';
-            void appHeader.offsetWidth; // reflow для плавности
-            appHeader.classList.add('visible'); // ← КЛЮЧЕВОЕ: появляется только здесь
+            void appHeader.offsetWidth; // reflow
+            appHeader.classList.add('visible');
         }
     }, 400);
     
-    // 5. Удаляем hero после анимации
+    // 4. Удаляем hero после анимации
     setTimeout(() => {
         if (heroSection && heroSection.parentNode) heroSection.remove();
         document.body.style.overflow = '';
         window.dispatchEvent(new Event('resize'));
     }, 1000);
 }
-
 
 function markEverythingReady() {
     isEverythingReady = true;
@@ -611,6 +611,7 @@ galleryEl.addEventListener('mousedown', e => {
     if (!galleryEl.classList.contains('date-mode')) return;
     isGalleryDrag = true; dragMoved = false; dragStartY = e.pageY; dragScrollStart = galleryEl.scrollTop; galleryEl.style.cursor = 'grabbing';
 });
+
 window.addEventListener('mousemove', e => {
     if (!isGalleryDrag) return;
     if (Math.abs(e.pageY - dragStartY) > 10) dragMoved = true;
@@ -625,22 +626,14 @@ galleryEl.addEventListener('wheel', e => {
     clearTimeout(wheelSnapTimeout); wheelSnapTimeout = setTimeout(enableSnap, 150);
 }, { passive: true });
 
-// === ПОКАЗ ХЕДЕРА ПРИ СКРОЛЛЕ ВВЕРХ ===
-let lastScrollY = 0;
-const header = document.getElementById('app-header');
-
-galleryEl.addEventListener('scroll', () => {
-    const currentY = galleryEl.scrollTop;
-    
-    // Показываем хедер, если доскроллили до самого верха (менее 50px)
-    if (currentY < 50) {
-        if (header && !header.classList.contains('visible')) {
-            header.classList.add('visible');
-        }
-    }
-    
-    lastScrollY = currentY;
-}, { passive: true });
-
 // === СТАРТ ===
 loadGallery();
+
+// В конце app.js, после всех событий:
+window.addEventListener('resize', () => {
+    // Если hero ещё не удалён и находится в "прилипшем" состоянии,
+    // можно пересчитать transform, но это сложно.
+    // Проще: при ресайзе просто ничего не делаем, 
+    // потому что после свайпа hero удаляется из DOM.
+    // А галерея сама подстроится под новый размер.
+});

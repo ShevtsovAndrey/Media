@@ -1,12 +1,10 @@
 :root {
     --bg: #010101; 
-    --bg-light: #fafafa;
-    --text: #000000;
-    --text-light: #000000;
-    --accent: #00ffe7;
-    --bgoverlay: hsl(0deg 0% 0% / 30%);
-    --bgoverlay-light: hsl(0deg 0% 100% / 30%);
+    --text: #010101;
     --br: 50%;
+    --header-height: 10vh;
+    --galleryindex: 2;
+    --heroindex: 20;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -14,23 +12,28 @@
 /* === ЗАГЛАВНЫЙ БЛОК === */
 #hero-section {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100vh;
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100vh;
     background: var(--bg);
-    z-index: 99999;
     display: flex;
     align-items: center;
     justify-content: center;
     will-change: transform;
     user-select: none;
     overflow: hidden; /* ← Убирает чёрную полосу справа */
+    z-index: var(--heroindex);
 }
 
 .hero-content {
-    width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    padding: 10vh 4vw; box-sizing: border-box;
-    filter: invert(1);
+    width: 100%; 
+    height: 100%;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    padding: 10vh 4vw; 
+    box-sizing: border-box;
     position: relative;
 }
 
@@ -41,6 +44,7 @@
     -webkit-touch-callout: none !important;
     touch-action: none !important;
     cursor: default !important;
+        filter: invert(1);
 }
 
 .hero-logo img{
@@ -52,24 +56,31 @@
     -webkit-touch-callout: none !important;
     touch-action: none !important;
     cursor: default !important;
+    filter: invert(1);
 }
 
 
 /* Большой лоадер строго по центру */
 #bigLoader {
     position: absolute;
-    top: 50%; left: 50%;
+    top: 50%; 
+    left: 50%;
     transform: translate(-50%, -50%);
     width: 200px; 
     height: 200px;
     object-fit: contain;
     animation: spin 1.2s linear infinite;
     pointer-events: none;
-    z-index: 2;
+    z-index: 22;
+    filter: invert(1);
 }
 
-#hero-section.dragging { cursor: grabbing; }
-#hero-section.hidden { transform: translateY(-100%); }
+#hero-section.dragging { 
+    cursor: grabbing; 
+}
+#hero-section.hidden { 
+    transform: translateY(-100%); 
+}
 
 /* Текст статуса чуть ниже центра (под лого) */
 .hero-status {
@@ -80,7 +91,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    z-index: 1;
+    z-index: 26;
 }
 
 #statusText {
@@ -93,10 +104,14 @@
 
 /* Стрелка ВНИЗУ, как было изначально (не тронута) */
 .hero-arrow {
-    position: absolute; bottom: 2vh; left: 50%;
+    position: absolute; 
+    bottom: 2vh; 
+    left: 50%;
     transform: translateX(-50%);
-    width: 24px; height: 24px;
-    opacity: 0; pointer-events: none;
+    width: 24px; 
+    height: 24px;
+    opacity: 0; 
+    pointer-events: none;
     transition: opacity 0.3s;
     z-index: 1;
 }
@@ -111,26 +126,47 @@
 #hero-section.ready .hero-status { 
     display: none; 
 }
-#hero-section.ready .hero-arrow { opacity: 1; pointer-events: auto; }
+#hero-section.ready .hero-arrow { 
+    opacity: 1; 
+    pointer-events: auto; 
+}
 
 @keyframes spin {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
+    from { 
+        transform: translate(-50%, -50%) rotate(0deg); 
+    }
+    to { 
+        transform: translate(-50%, -50%) rotate(360deg); 
+    }
 }
 @keyframes bounce {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(-8px); }
+    0%, 100% { 
+        transform: translateX(-50%) translateY(0); 
+    }
+    50% { 
+        transform: translateX(-50%) translateY(-8px); 
+    }
 }
 
 /* Блокируем drag */
 .gallery, .photo-card, .photo-card img, .hero-content {
-    user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
+    user-select: none; 
+    -webkit-user-select: none; 
+    -webkit-user-drag: none;
 }
 
 @media (max-width: 768px) {
-    .hero-arrow { width: 24px; height: 24px; }
-    #statusText { font-size: 12px; }
-    #bigLoader { width: 200px; height: 200px; }
+    .hero-arrow { 
+        width: 24px; 
+        height: 24px; 
+    }
+    #statusText { 
+        font-size: 12px; 
+    }
+    #bigLoader { 
+        width: 200px; 
+        height: 200px; 
+    }
 }
 
 
@@ -138,22 +174,37 @@ body {
     background: var(--bg);
     font-family: system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
-    user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
+    user-select: none; 
+    -webkit-user-select: none; 
+    -webkit-user-drag: none;
 }
 
 /* === ГАЛЕРЕЯ === */
-.gallery { display: flex; flex-wrap: wrap; justify-content: center; max-width: 100%; }
+.gallery { 
+    display: flex; 
+    flex-wrap: wrap; 
+    justify-content: center; 
+    max-width: 100%; 
+}
 
 /* Оверлей админа */
 .photo-card .delete-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    gap: 24px; opacity: 0;
+    position: absolute; 
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100%;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    gap: 24px; 
+    opacity: 0;
     background: rgba(0,0,0,0.2);
-    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px); 
+    -webkit-backdrop-filter: blur(2px);
     transition: opacity 0.25s ease;
     pointer-events: none !important;
-    z-index: 15;
+    z-index: 8;
 }
 
 .delete-btn, .edit-meta-btn { pointer-events: auto !important; }
@@ -182,18 +233,34 @@ body {
 
 /* Кнопки админа */
 .delete-overlay {
-    position: absolute; display: flex; gap: 6px;
-    align-items: flex-start; justify-content: flex-start;
-    opacity: 0.3; transition: opacity 0.2s;
-    pointer-events: none; z-index: 9999;
+    position: absolute; 
+    display: flex; 
+    gap: 6px;
+    align-items: flex-start; 
+    justify-content: flex-start;
+    opacity: 0.3; 
+    transition: opacity 0.2s;
+    pointer-events: none; 
+    z-index: 8;
 }
 
 .delete-btn, .edit-meta-btn {
-    width: 48px; height: 48px; border: none; background: transparent;
-    box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
-    border-radius: 0; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; padding: 0; transition: transform 0.2s ease;
-    pointer-events: auto; user-select: none;
+    width: 48px; 
+    height: 48px; 
+    border: none; 
+    background: transparent;
+    box-shadow: none; 
+    backdrop-filter: none; 
+    -webkit-backdrop-filter: none;
+    border-radius: 0; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    cursor: pointer; 
+    padding: 0; 
+    transition: transform 0.2s ease;
+    pointer-events: auto; 
+    user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -201,26 +268,33 @@ body {
 .delete-btn:active, .edit-meta-btn:active { transform: scale(0.95); }
 
 .delete-btn img, .edit-meta-btn img {
-    width: 48px; height: 48px; object-fit: contain;
-    pointer-events: none; filter: invert(1);
-}
-
-@media (prefers-color-scheme: light) {
-    .delete-btn img, .edit-meta-btn img { filter: invert(0); }
-    .photo-card .delete-overlay { background: rgba(255,255,255,0.15); }
+    width: 48px; 
+    height: 48px; 
+    object-fit: contain;
+    pointer-events: none; 
+    filter: invert(1);
 }
 
 /* Кнопка + */
 .add-btn {
-    position: fixed; bottom: 2vh; right: 2vw;
-    width: 48px; height: 48px;
+    position: fixed; 
+    bottom: 2vh; 
+    right: 2vw;
+    width: 48px; 
+    height: 48px;
     background: var(--bgoverlay);
-    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px); 
+    -webkit-backdrop-filter: blur(6px);
     border: 0px solid rgb(255 255 255 / 10%);
     box-shadow: 0 12px 32px rgba(0,0,0,0.2);
-    border-radius: var(--br); color: #fff;
-    font-size: 24px; display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s ease; z-index: 100;
+    border-radius: var(--br); 
+    color: #fff;
+    font-size: 24px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    transition: all 0.2s ease; 
+    z-index: 10;
 }
 
 .add-btn:hover { transform: scale(1.05); background: rgba(255,255,255,0.1); }
@@ -289,45 +363,9 @@ body {
     pointer-events: none; filter: invert(1);
 }
 
-/* Светлая тема */
-@media (prefers-color-scheme: light) {
-    .hero-loader img, .hero-arrow img { filter: invert(0); }
-    .hero-content { background: var(--bg-light); filter: invert(0); }
-    .hero-logo { mix-blend-mode: multiply; }
-    #statusText { color: #000; }
-    .status-loader { filter: invert(0); }
-    
-    body { background: var(--bg-light); color: #e0e0e0; }
-    .year-header { color: var(--text-light); text-shadow: none; }
-    
-    .add-btn { background: var(--bgoverlay-light); color: var(--text-light); }
-    .add-btn:hover { background: var(--bgoverlay-light); }
-    .add-btn .loading-icon { filter: invert(0) !important; }
-    
-    .edit-meta-btn, .delete-btn { background: transparent; filter: invert(1); }
-    .edit-meta-btn img, .delete-btn img { filter: invert(0); }
-    
-    .drag-overlay { background: rgba(255,255,255,0.75); color: #000; text-shadow: none; }
-    .loading { color: #333; }
-    .lightbox.active { background: var(--bgoverlay-light); }
-    .year-header.unknown-header {
-        background: rgba(255,100,100,0.15); color: #cc0000; border-left-color: #cc0000;
-    }
-}
-
 /* ========================================== */
 /* === МОЗАИКА — MASONRY (АДАПТИВНАЯ 3-6) === */
 /* ========================================== */
-#gallery.date-mode {
-    height: 100vh; 
-    overflow-y: scroll; 
-    overflow-x: hidden;
-    scroll-snap-type: y mandatory; 
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; 
-    display: block !important; 
-    scroll-padding: 0;
-}
 
 .year-section {
     height: auto; 
@@ -384,13 +422,15 @@ body {
 
 /* === ХЕДЕР: ФИКСИРОВАННЫЙ ПОВЕРХ ВСЕГО === */
 #app-header {
-    position:fixed;
-    top: 0; left: 0;
-    width: 100%; height: 6vh;
-    background: var(--bg); /* Белый блок */
-    z-index: 100; /* Поверх всего */
-    display: none; /* ← СКРЫТ ПО УМОЛЧАНИЮ */
-    pointer-events: none; /* Клики проходят сквозь */
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100%;
+    height: var(--header-height); /* ← Используем переменную */
+    background: #ffffff;
+    z-index: 1000;
+    display: none;
+    pointer-events: none;
 }
 
 #app-header.visible {
@@ -414,10 +454,18 @@ body {
 
 /* === ГАЛЕРЕЯ: ОТСТУП ПОД ХЕДЕР === */
 #gallery.date-mode {
-    padding-top: 10vh; /* ← Ровно высота хедера */
-    position: relative; /* ← Создаёт новый stacking context */
-    z-index: 2; /* ← Ниже хедера */
+    height: 100vh;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding-top: var(--header-height); /* ← Отступ = высоте хедера */
+    display: block !important;
+    scroll-padding: 0;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
 }
 
 /* === ФУТЕР: СТИЛИ === */
@@ -449,4 +497,11 @@ body {
     color:var(--text);
     top:50%;
     left:50%
+}
+
+#hero-section.stuck {
+    /* Сдвигаем вверх на (100vh - высота хедера) */
+    transform: translateY(calc(-100vh + var(--header-height))) !important;
+    /* Убираем transition, чтобы не было дёрганий при смене класса */
+    transition: none !important;
 }
